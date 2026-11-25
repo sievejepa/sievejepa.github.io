@@ -39,11 +39,10 @@ footer{border-top:1px solid var(--line);margin-top:56px;padding:22px 0 60px;font
 <header>
   <h1>SIEVE</h1>
   <p class="lead">Recover each factor's block of a self-supervised embedding by pairing states, differencing their moments, and taking eigen-directions.</p>
-  <!-- REPO_URL: replace the href below with the code repository link -->
-  <a class="cta" id="repo-link" href="https://github.com/sievejepa">Code on GitHub</a>
-  <a class="cta alt" href="#blog">Technical write-up</a>
+  <a class="cta" href="#blog">Technical write-up</a>
+  <span class="cap" style="margin-left:10px">Code: coming soon</span>
   <img class="gif" src="sieve_method.gif" alt="Animation of SIEVE: paired states, the signed spectrum of each moment difference, the kept top-4 directions and the resulting per-rung scores">
-  <p class="cap">The method in 20 seconds. Pair diagram is illustrative; the spectra and scores are real (seed 0, 16-rung synthetic world, no whitening, no rescaling).</p>
+  <p class="cap">The method in 20 seconds, on a synthetic world (no video): 5 hidden factors with their own rhythms, a 24-D embedding, SIEVE run rung by rung without whitening. Read-outs and scores come from that run; coloured curves are linearly scaled to the true factor for display.</p>
 </header>
 
 <main>
@@ -103,14 +102,10 @@ footer{border-top:1px solid var(--line);margin-top:56px;padding:22px 0 60px;font
 <tr><td>Recovering the OU rate ρ of each factor</td><td>Not done; ρ was fixed at 0.5</td></tr>
 </table></div>
 
-<h2>Run it</h2>
-<pre>python run_seed.py --seed 0      # train encoder, build moments, extract blocks
-python aggregate.py             # tables and results.json</pre>
-<p>All code and per-seed results are in the repository.</p>
 </main>
 
 <footer>
-  SIEVE is research code. Numbers on this page come from the result files in the repository. Recovery is reported as a matter of degree.
+  SIEVE is research code; the code is not yet public. Recovery is reported as a matter of degree.
 </footer>
 </div>
 </body>
