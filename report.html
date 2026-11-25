@@ -24,7 +24,7 @@ th{border-bottom:2px solid #222}
 
 <h2>The question</h2>
 <p>Take a picture of a robot scene. A few things can change in it: where the cube is, its colour, the light, the camera angle. An encoder turns the picture into a long list of numbers. This list is the <b>learned representation</b> (or embedding) of the picture.</p>
-<p>Somewhere in that representation, each of those things is stored. Can we find out <em>where</em>, so that we get one small piece of the list per thing? This is the problem of <b>recovering the underlying variables (factors) from a learned representation</b>.</p>
+<p>The representation carries a huge mixture of these variables: every number in the list blends many of them together. Can we unmix it, so that we get one small piece of the list per variable? This is the problem of <b>recovering the underlying variables (factors) from a learned representation</b>.</p>
 
 <svg viewBox="0 0 600 130" role="img" aria-label="A picture goes into an encoder and comes out as a long list, which we want to cut into pieces, one per factor">
  <rect x="10" y="30" width="90" height="70" fill="none" stroke="#222" stroke-width="2"/>
@@ -43,11 +43,11 @@ th{border-bottom:2px solid #222}
  <text x="410" y="42" text-anchor="middle" font-size="14">colour</text>
  <text x="480" y="42" text-anchor="middle" font-size="14">light</text>
  <text x="555" y="42" text-anchor="middle" font-size="14">camera</text>
- <text x="455" y="108" text-anchor="middle" font-size="15">a long list of numbers, which we want to cut into pieces</text>
+ <text x="455" y="108" text-anchor="middle" font-size="15">a long list: a mixture of all the factors, to be unmixed</text>
 </svg>
 
 <h2>The idea</h2>
-<p>Take two pictures that are the same except for one thing, say the cube moved. Look at how the list changed. Only the cube's part of the list moved. That tells us where the cube lives.</p>
+<p>Take two pictures that are the same except for one thing, say the cube moved. Look at how the list changed. Only the cube's part of the list moved. That tells us which part of the list carries the cube.</p>
 <p>Now take two pictures where the cube <em>and</em> the colour are different. More of the list moves. The new part, compared with before, belongs to the colour.</p>
 <p>So we climb a ladder. Each step lets one more thing differ. Whatever is new at a step belongs to the thing we just added. We take that piece out and go on to the next step. Like a sieve: each pass catches one kind of thing. The method works on the spectrum (the eigenvalues and eigenvectors) of how the list changes, and repeats this step by step, hence <em>spectral iteration</em>.</p>
 
@@ -81,7 +81,7 @@ th{border-bottom:2px solid #222}
 <tr><td>Partly</td><td>cube colour, brightness, light tint</td></tr>
 <tr><td>Hardly</td><td>gripper opening, cube yaw</td></tr>
 </table>
-<p>The pattern is simple. <b>If the encoder stores a factor strongly, SIEVE recovers it strongly. If the encoder barely stores it, there is little to recover.</b> This held both with and without whitening (a standard step that evens out the list before we start).</p>
+<p>The pattern is simple. <b>If the representation carries a factor strongly, SIEVE recovers it strongly. If it barely carries it, there is little to recover.</b> This held both with and without whitening (a standard step that evens out the list before we start).</p>
 
 <h2>What whitening changes</h2>
 <p>With whitening, each factor comes out spread over hundreds of directions in the list. Without it, the same factor sits in just a few. The factor is found either way, but without whitening its piece is much smaller and tidier.</p>
@@ -98,7 +98,7 @@ th{border-bottom:2px solid #222}
 <p>Why does it spread? Our reading: the autoencoder is non-linear and the factors come in steps (a few levels each), while the clean world was linear and Gaussian. We have <em>not</em> tested this directly. It is our best explanation, not a result.</p>
 
 <h2>What this means</h2>
-<p>SIEVE finds what is in the encoder. If a factor is stored strongly, it comes out. If the encoder lost it on the way in, no method could get it back. So when recovery is weak, look at the encoder, not the method.</p>
+<p>SIEVE finds what the representation carries. If a factor is carried strongly, it comes out. If the encoder lost it on the way in, no method could get it back. So when recovery is weak, look at the encoder, not the method.</p>
 
 <div class="end"><a href="details.html">Detailed report</a></div>
 </main></body></html>
