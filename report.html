@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SIEVE: a short report</title>
 <style>
-body{margin:0;background:#fdfcf8;color:#222;font:18px/1.6 Georgia,"Times New Roman",serif}
+body{margin:0;background:#fff;color:#222;font:18px/1.6 Georgia,"Times New Roman",serif}
 main{max-width:640px;margin:0 auto;padding:32px 16px 64px}
 h1{font-size:28px;line-height:1.25;margin:0 0 6px}
 h2{font-size:21px;margin:40px 0 8px}
@@ -20,7 +20,6 @@ th{border-bottom:2px solid #222}
 </style></head><body><main>
 
 <h1>SIEVE: pulling factors out of an encoder, one at a time</h1>
-<div class="by">A short report. The numbers are kept for the details page.</div>
 
 <h2>The question</h2>
 <p>Take a picture of a robot scene. A few things can change in it: where the cube is, its colour, the light, the camera angle. An encoder turns the picture into a long list of numbers.</p>
@@ -68,7 +67,6 @@ th{border-bottom:2px solid #222}
  <rect x="520" y="148" width="40" height="22" fill="#9bc79b" stroke="#222" stroke-width="2"/>
  <text x="500" y="16" font-size="13" text-anchor="middle">part of the list that moved</text>
 </svg>
-<p class="cap">At each step the moving part gets bigger. The new bit is the piece we keep.</p>
 
 <h2>Test 1: a clean made-up world</h2>
 <p>First we built a world where we know the answer. The factors are smooth random numbers (Gaussian), and the encoder is trained to undo the mixing.</p>
@@ -101,9 +99,5 @@ th{border-bottom:2px solid #222}
 <h2>What this means</h2>
 <p>SIEVE finds what is in the encoder. If a factor is stored strongly, it comes out. If the encoder lost it on the way in, no method could get it back. So when recovery is weak, look at the encoder, not the method.</p>
 
-<div class="end">
- Want the numbers? <a href="details.html">Detailed results</a>.
- Want to watch the method run step by step? <a href="process.html">Interactive walkthrough</a>.
- <a href="index.html">Back to the overview</a>.
-</div>
+<div class="end"><a href="details.html">Detailed report</a></div>
 </main></body></html>
