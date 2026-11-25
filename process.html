@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How SIEVE works</title>
+<meta name="description" content="A step-by-step walkthrough of SIEVE: pair states, difference them, subtract what was already taken, sieve the spectrum, extract one block, move to the next rung.">
+<style>
+:root{--bg:#fafaf7;--fg:#1c2026;--muted:#5d646d;--line:#dcdcd4;--card:#ffffff;--accent:#2563eb;--code:#f0f0ea;--warn:#b45309}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--fg:#e8eaed;--muted:#9aa1ab;--line:#2c3138;--card:#1b1f24;--accent:#6ea0ff;--code:#1f242a;--warn:#e0a458;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171b;--fg:#e8eaed;--muted:#9aa1ab;--line:#2c3138;--card:#1b1f24;--accent:#6ea0ff;--code:#1f242a;--warn:#e0a458;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.65 Georgia,"Times New Roman",serif}
+.wrap{max-width:860px;margin:0 auto;padding:0 18px}
+header{padding:48px 0 12px}
+h1{font:700 36px/1.15 "Segoe UI",system-ui,sans-serif;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+h2{font:600 24px/1.3 "Segoe UI",system-ui,sans-serif;margin:44px 0 8px;text-wrap:balance}
+h3{font:600 18px/1.3 "Segoe UI",system-ui,sans-serif;margin:26px 0 4px}
+.lead{font-size:19px;color:var(--muted);margin:0 0 16px}
+a{color:var(--accent)}
+.ans{border-left:4px solid var(--accent);background:var(--card);padding:10px 18px;margin:18px 0}
+.ans p{margin:6px 0}
+.cap{font:14px "Segoe UI",system-ui,sans-serif;color:var(--muted);margin:4px 0 10px}
+table{border-collapse:collapse;width:100%;font:14px/1.45 "Segoe UI",system-ui,sans-serif;margin:10px 0}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td small{color:var(--muted)}
+.scroll{overflow-x:auto}
+.fig{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 14px 8px;margin:14px 0}
+.fig h3{margin:0 0 2px}
+.b{font-size:12px;padding:1px 7px;border-radius:10px;border:1px solid var(--line);white-space:nowrap}
+.b.strong{background:var(--accent);color:#fff;border-color:transparent}
+.note{border-left:3px solid var(--warn);padding:4px 14px;margin:18px 0;background:var(--card)}
+.note p{margin:6px 0}
+.tag{font:600 12px "Segoe UI",system-ui,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:var(--warn)}
+code{background:var(--code);font:14px Consolas,monospace;border-radius:6px;padding:1px 5px}
+ul{padding-left:22px}li{margin:4px 0}
+footer{border-top:1px solid var(--line);margin-top:56px;padding:22px 0 60px;font:14px "Segoe UI",system-ui,sans-serif;color:var(--muted)}
+.gl{stroke:var(--line);stroke-width:1}
+.sA{fill:var(--sA)}.sB{fill:var(--sB)}
+.sw{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:6px}
+.sw.sA{background:var(--sA)}.sw.sB{background:var(--sB)}
+
+.ladder-fig{--b0f:#e6eef8;--b0i:#1c2026;--b1f:#9ec5f4;--b1i:#0d1f3a;--b2f:#2a78d6;--b2i:#ffffff;--b3f:#104281;--b3i:#ffffff;
+  --sA:#2a78d6;--sB:#eb6834}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ladder-fig{--b0f:#252b33;--b0i:#c9ced6;--b1f:#184f95;--b1i:#ffffff;
+  --b2f:#3987e5;--b2i:#0b0b0b;--b3f:#9ec5f4;--b3i:#0b1a30;--sA:#3987e5;--sB:#d95926}}
+:root[data-theme="dark"] .ladder-fig{--b0f:#252b33;--b0i:#c9ced6;--b1f:#184f95;--b1i:#ffffff;--b2f:#3987e5;--b2i:#0b0b0b;
+  --b3f:#9ec5f4;--b3i:#0b1a30;--sA:#3987e5;--sB:#d95926}
+.ladder-fig svg{display:block;width:100%;height:auto;min-width:660px}
+.ladder-fig text{font-family:"Segoe UI",system-ui,sans-serif}
+.ladder-fig .tl{fill:var(--fg);font-size:13px}
+.ladder-fig .ts{fill:var(--muted);font-size:11px}
+.ladder-fig .tv{font-size:15px;font-weight:700}
+.ladder-fig .tk{font-size:11px;opacity:.85}
+.ladder-fig .c0{fill:var(--b0f)}.ladder-fig .i0{fill:var(--b0i)}
+.ladder-fig .c1{fill:var(--b1f)}.ladder-fig .i1{fill:var(--b1i)}
+.ladder-fig .c2{fill:var(--b2f)}.ladder-fig .i2{fill:var(--b2i)}
+.ladder-fig .c3{fill:var(--b3f)}.ladder-fig .i3{fill:var(--b3i)}
+.ladder-fig .cx{fill:var(--card)}.ladder-fig .ix{fill:var(--muted)}
+.ladder-fig .edge{stroke:var(--line);stroke-width:1}
+.ladder-fig .hatch{stroke:var(--muted);stroke-width:1.2}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font:13px "Segoe UI",system-ui,sans-serif;color:var(--muted);margin:8px 0}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+.legend .l0{background:var(--b0f)}.legend .l1{background:var(--b1f)}.legend .l2{background:var(--b2f)}.legend .l3{background:var(--b3f)}
+.legend .lx{background:repeating-linear-gradient(45deg,transparent 0 3px,var(--muted) 3px 4px)}
+
+:root{--onacc:#ffffff;--f1:#2a78d6;--f2:#eb6834;--f3:#1baf7a;--f4:#eda100;--f5:#e87ba4;--f6:#008300;--f7:#6250d6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--onacc:#0b0b0b;--f1:#3987e5;--f2:#d95926;--f3:#199e70;--f4:#c98500;--f5:#d55181;--f6:#0ca30c;--f7:#9085e9}}
+:root[data-theme="dark"]{--onacc:#0b0b0b;--f1:#3987e5;--f2:#d95926;--f3:#199e70;--f4:#c98500;--f5:#d55181;--f6:#0ca30c;--f7:#9085e9}
+.wrap{max-width:900px}
+.eyebrow{font:600 13px "Segoe UI",system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 16px 6px;margin:18px 0;font-family:"Segoe UI",system-ui,sans-serif}
+.plate{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.plate .lab{font-size:13px;color:var(--muted);margin-right:4px}
+.chipf{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px 4px 6px;font-size:13px;border:2px solid transparent;background:var(--code);color:var(--fg);transition:opacity .25s,border-color .25s}
+.chipf i{width:18px;height:18px;border-radius:50%;display:inline-block;background:var(--c)}
+.chipf.eaten{opacity:.45;text-decoration:line-through}
+.chipf.now{border-color:var(--c);font-weight:700}
+.chipf.left{border-style:dashed;border-color:var(--muted)}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.ctrl button{font:600 14px "Segoe UI",system-ui,sans-serif;border:1.5px solid var(--accent);background:transparent;color:var(--accent);border-radius:8px;padding:7px 14px;cursor:pointer}
+.ctrl button.p{background:var(--accent);color:var(--onacc)}
+.ctrl button:disabled{opacity:.4;cursor:default}
+.ctrl button:focus-visible{outline:3px solid var(--warn);outline-offset:2px}
+.dots{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.dots button{padding:6px 10px;border-width:1px;color:var(--muted);border-color:var(--line)}
+.dots button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.say{font:17px/1.5 Georgia,serif;background:var(--bg);border-left:4px solid var(--accent);padding:10px 14px;margin:10px 0 14px;min-height:5.2em}
+.sticky{position:sticky;top:0;z-index:3;background:var(--card);padding:4px 0 2px;border-bottom:1px solid var(--line)}
+.sticky .say{margin-bottom:8px;min-height:4.6em}
+.pn{scroll-margin-top:210px}
+.flow{display:flex;flex-direction:column;padding-top:12px}
+.pn{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;opacity:.38;transition:opacity .3s}
+.pn.act,.pn.done{opacity:1}
+.pn.done .nd{background:var(--muted)}
+.rail{display:flex;flex-direction:column;align-items:center}
+.nd{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--onacc);display:grid;place-items:center;font:700 13px "Segoe UI",sans-serif;flex:none}
+.ln{width:2px;flex:1;background:var(--line);margin:4px 0}
+.pn:last-child .ln{display:none}
+.bd{padding-bottom:16px;min-width:0}
+.bd h3{margin:2px 0 2px;font-size:16px}
+.bd .sub{font-size:13px;color:var(--muted);margin:0 0 6px}
+.pn svg{display:block;width:100%;height:auto;max-width:560px}
+.pn text{font-family:"Segoe UI",system-ui,sans-serif;fill:var(--muted);font-size:11px}
+.pn .ink{fill:var(--fg)}
+.pg{display:grid;grid-template-columns:54px repeat(7,minmax(0,1fr));gap:4px;font:12px "Segoe UI",sans-serif;max-width:560px}
+.pg .h{text-align:center;color:var(--muted)}
+.pg .r{display:flex;align-items:center;color:var(--muted)}
+.pc{height:30px;border-radius:5px;display:grid;place-items:center;font:600 12px Consolas,monospace;color:#fff;background:var(--c)}
+.pc.b{opacity:.55}
+.pc.s{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--line) 5px 6px);border:1.5px solid var(--c);color:var(--muted)}
+.hm{border-collapse:separate;border-spacing:3px;font:12.5px "Segoe UI",sans-serif;max-width:560px;width:100%}
+.hm th{color:var(--muted);font-weight:500;font-size:12px}
+.hm td{text-align:center;padding:7px 2px;border-radius:4px;font-variant-numeric:tabular-nums}
+.hm tr.cur td,.hm tr.cur th{outline:0}
+.hm tr.cur td.dg{box-shadow:0 0 0 2px var(--fg)}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:4px 0 0}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:14px 0}
+.cards div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:14px/1.5 "Segoe UI",sans-serif}
+.cards b{display:block;margin-bottom:4px;font-size:15px}
+.hm th{white-space:nowrap}
+@media (max-width:600px){.say{font-size:14.5px;min-height:0!important;padding:8px 10px}.sticky .ctrl{gap:6px}.ctrl button{padding:6px 10px;font-size:13px}.dots button{padding:5px 8px}.hm td{padding:6px 1px;font-size:11.5px}.pn{scroll-margin-top:190px}}
+@media (prefers-reduced-motion:reduce){.pn,.chipf{transition:none}}
+</style></head><body><div class="wrap">
+<header>
+<p class="eyebrow">SIEVE · how it works</p>
+<h1>A learner that eats one factor at a time</h1>
+<p class="lead">SIEVE never sees a label. It builds a ladder of pairs, each rung redrawing one more factor, and takes one bite per rung: compare, subtract what it already ate, sieve, keep the four directions that are left. Step through it below. The numbers are real (seed 0 of the 7-factor synthetic run, LeJEPA encoder, whitened).</p>
+</header>
+<main>
+<div class="stage" id="stage">
+<div class="plate" id="plate" aria-label="Factors: eaten, current, left over"></div>
+<div class="sticky">
+<div class="ctrl">
+<button id="back" type="button">◀ Back</button><button id="next" type="button" class="p">Next ▶</button><button id="play" type="button">▶ Play</button>
+<div class="dots" id="dots" role="group" aria-label="Jump to rung"></div>
+</div>
+<div class="say" id="say" aria-live="polite"></div>
+</div>
+<div class="flow" id="flow"></div>
+</div>
+
+<h2>What makes the bite harder</h2>
+<p>On the synthetic world each bite is clean. On real images the encoder decides how much the learner can get:</p>
+<div class="cards">
+<div><b>The factor isn't in the embedding</b>Nothing to sieve. Where the full-embedding R² for a factor is about zero (the ResNet run's gripper, yaw, position, colour), its block recovers nothing.</div>
+<div><b>The factor is spread out</b>With whitening, a PickCube factor occupies hundreds of directions, so a mouth of rank 1–3 catches almost nothing; ranks of 12–16 or more are needed. Without whitening, 1–5 directions are enough.</div>
+<div><b>The factor is entangled</b>Some blocks respond more to pairs that hold their own factor fixed than to pairs that vary it, so they pick up other factors and leak.</div>
+</div>
+<div class="ladder-fig stage"><h3 style="margin:0 0 4px;font-size:16px">How wide a mouth each PickCube factor needs</h3>
+<p class="cap"><span class="sw sA"></span>No whitening &nbsp; <span class="sw sB"></span>Supplied whitening. Embedding directions occupied by each factor, log scale.</p>
+<div class="scroll"><div style="min-width:620px"><svg viewBox="0 0 750 360" role="img" aria-label="Embedding directions each factor occupies, whitened against not whitened">
+<line x1="150.0" x2="150.0" y1="22" y2="338" class="gl"/>
+<text x="150.0" y="354" text-anchor="middle" class="ts">1</text>
+<line x1="307.5265903924043" x2="307.5265903924043" y1="22" y2="338" class="gl"/>
+<text x="307.5265903924043" y="354" text-anchor="middle" class="ts">10</text>
+<line x1="465.05318078480855" x2="465.05318078480855" y1="22" y2="338" class="gl"/>
+<text x="465.05318078480855" y="354" text-anchor="middle" class="ts">100</text>
+<line x1="622.5797711772128" x2="622.5797711772128" y1="22" y2="338" class="gl"/>
+<text x="622.5797711772128" y="354" text-anchor="middle" class="ts">1000</text>
+<text x="140" y="45" text-anchor="end" class="tl">gripper</text>
+<g><title>gripper: 5 directions (no whitening)</title><rect x="150" y="30" width="110.10636156961709" height="10" rx="3" class="sA"/></g>
+<text x="266.1063615696171" y="39" class="ts">5</text>
+<g><title>gripper: 868 directions (whitened)</title><rect x="150" y="43" width="462.89499310787755" height="10" rx="3" class="sB"/></g>
+<text x="618.8949931078776" y="52" class="ts">868</text>
+<text x="140" y="79" text-anchor="end" class="tl">arm pose</text>
+<g><title>arm pose: 6 directions (no whitening)</title><rect x="150" y="64" width="122.57951328252148" height="10" rx="3" class="sA"/></g>
+<text x="278.5795132825215" y="73" class="ts">6</text>
+<g><title>arm pose: 1417 directions (whitened)</title><rect x="150" y="77" width="496.42454757490395" height="10" rx="3" class="sB"/></g>
+<text x="652.424547574904" y="86" class="ts">1417</text>
+<text x="140" y="113" text-anchor="end" class="tl">cube yaw</text>
+<g><title>cube yaw: 9 directions (no whitening)</title><rect x="150" y="98" width="150.31856891946848" height="10" rx="3" class="sA"/></g>
+<text x="306.3185689194685" y="107" class="ts">9</text>
+<g><title>cube yaw: 1194 directions (whitened)</title><rect x="150" y="111" width="484.71000022243174" height="10" rx="3" class="sB"/></g>
+<text x="640.7100002224317" y="120" class="ts">1194</text>
+<text x="140" y="147" text-anchor="end" class="tl">cube position</text>
+<g><title>cube position: 5 directions (no whitening)</title><rect x="150" y="132" width="110.10636156961709" height="10" rx="3" class="sA"/></g>
+<text x="266.1063615696171" y="141" class="ts">5</text>
+<g><title>cube position: 679 directions (whitened)</title><rect x="150" y="145" width="446.094789977715" height="10" rx="3" class="sB"/></g>
+<text x="602.094789977715" y="154" class="ts">679</text>
+<text x="140" y="181" text-anchor="end" class="tl">cube colour</text>
+<g><title>cube colour: 4 directions (no whitening)</title><rect x="150" y="166" width="94.84045764557439" height="10" rx="3" class="sA"/></g>
+<text x="250.8404576455744" y="175" class="ts">4</text>
+<g><title>cube colour: 162 directions (whitened)</title><rect x="150" y="179" width="348.05736666172413" height="10" rx="3" class="sB"/></g>
+<text x="504.05736666172413" y="188" class="ts">162</text>
+<text x="140" y="215" text-anchor="end" class="tl">light tint</text>
+<g><title>light tint: 11 directions (no whitening)</title><rect x="150" y="200" width="164.04703895256574" height="10" rx="3" class="sA"/></g>
+<text x="320.04703895256574" y="209" class="ts">11</text>
+<g><title>light tint: 54 directions (whitened)</title><rect x="150" y="213" width="272.89808220198995" height="10" rx="3" class="sB"/></g>
+<text x="428.89808220198995" y="222" class="ts">54</text>
+<text x="140" y="249" text-anchor="end" class="tl">brightness</text>
+<g><title>brightness: 8 directions (no whitening)</title><rect x="150" y="234" width="142.2606864683616" height="10" rx="3" class="sA"/></g>
+<text x="298.2606864683616" y="243" class="ts">8</text>
+<g><title>brightness: 18 directions (whitened)</title><rect x="150" y="247" width="197.73879774225566" height="10" rx="3" class="sB"/></g>
+<text x="353.73879774225566" y="256" class="ts">18</text>
+<text x="140" y="283" text-anchor="end" class="tl">camera dist/elev</text>
+<g><title>camera dist/elev: 6 directions (no whitening)</title><rect x="150" y="268" width="122.57951328252148" height="10" rx="3" class="sA"/></g>
+<text x="278.5795132825215" y="277" class="ts">6</text>
+<g><title>camera dist/elev: 6 directions (whitened)</title><rect x="150" y="281" width="122.57951328252148" height="10" rx="3" class="sB"/></g>
+<text x="278.5795132825215" y="290" class="ts">6</text>
+<text x="140" y="317" text-anchor="end" class="tl">camera azimuth</text>
+<g><title>camera azimuth: 2 directions (no whitening)</title><rect x="150" y="302" width="47.42022882278718" height="10" rx="3" class="sA"/></g>
+<text x="203.42022882278718" y="311" class="ts">2</text>
+<g><title>camera azimuth: 2 directions (whitened)</title><rect x="150" y="315" width="47.42022882278718" height="10" rx="3" class="sB"/></g>
+<text x="203.42022882278718" y="324" class="ts">2</text>
+</svg></div></div></div>
+<p class="cap"><a href="report.html">Read the full report →</a> &nbsp; <a href="index.html">Back to the overview</a></p>
+</main>
+<footer>SIEVE is research code; the code is not yet public. Walkthrough numbers: first SIEVE report, seed 0, 7 factors × 4 dimensions, 30,000 pairs per rung.</footer>
+</div>
+<script>
+(function(){
+var S=[[2.0414, 1.9975, 1.9644, 1.9446, 0.0099, 0.0074, 0.0051, 0.0045, 0.0032, 0.0032, 0.0023, 0.0017, 0.0014, 0.0014, 0.0011, 0.001, 0.0009, 0.0008, 0.0007, 0.0006, 0.0006, 0.0005, 0.0005, 0.0004, 0.0004, 0.0003, 0.0002, 0.0002], [2.0803, 2.0192, 1.9868, 1.9397, 0.0506, 0.0266, 0.0075, 0.0031, 0.0026, 0.0021, 0.0018, 0.0016, 0.0013, 0.0011, 0.0009, 0.0009, 0.0008, 0.0007, 0.0006, 0.0006, 0.0006, 0.0004, 0.0003, 0.0003, 0.0002, 0.0001, -0.002, -0.0662], [2.0072, 1.9714, 1.9486, 1.9241, 0.0639, 0.035, 0.0225, 0.0165, 0.0044, 0.0015, 0.0015, 0.0012, 0.001, 0.0006, 0.0006, 0.0006, 0.0005, 0.0003, 0.0003, 0.0002, 0.0002, 0.0001, 0.0001, 0.0001, -0.005, -0.0214, -0.0552, -0.0695], [2.0708, 2.0266, 1.995, 1.9701, 0.1163, 0.0879, 0.0776, 0.053, 0.0349, 0.0179, 0.0122, 0.005, 0.001, 0.0008, 0.0005, 0.0005, 0.0004, 0.0003, 0.0002, 0.0001, 0.0001, -0.0003, -0.0004, -0.0026, -0.0243, -0.0507, -0.0574, -0.0689], [2.0215, 2.0032, 1.9785, 1.9396, 0.1296, 0.0947, 0.0816, 0.0571, 0.0449, 0.021, 0.009, 0.0008, 0.0005, 0.0003, 0.0002, 0.0001, 0.0001, -0.0003, -0.0008, -0.0112, -0.0186, -0.0263, -0.0385, -0.049, -0.0738, -0.0836, -0.094, -0.1299], [2.0343, 1.9807, 1.9677, 1.9517, 0.1176, 0.1093, 0.1018, 0.0831, 0.0547, 0.0404, 0.0227, 0.0152, 0.008, 0.0034, 0.0001, 0.0001, -0.0001, -0.0007, -0.0074, -0.0145, -0.0332, -0.0501, -0.0594, -0.0636, -0.0813, -0.0983, -0.1153, -0.129]], R2=[[0.9983, -0.0003, -0.0001, -0.0003, -0.0007, -0.0006, -0.0004], [0, 0.9972, -0.0002, -0.0006, -0.0005, -0.0005, -0.0006], [-0.0002, 0, 0.9956, -0.0005, -0.0005, -0.0009, -0.0001], [0.0004, -0.0003, 0, 0.9965, 0, -0.0006, -0.0002], [-0.0006, -0.0003, -0.0001, -0.0002, 0.9961, -0.0007, -0.0005], [-0.0002, 0, -0.0003, -0.0002, -0.0004, 0.9946, 0]], K=6, N=7;
+var NAMES=['F1','F2','F3','F4','F5','F6','F7'];
+var st={rung:1,stage:0,final:false,timer:null};
+var $=function(i){return document.getElementById(i)};
+function col(j){return 'var(--f'+(j+1)+')'}
+function f2(v,d){return v.toFixed(d==null?2:d)}
+
+function plate(){
+  var h='<span class="lab">The plate</span>';
+  for(var j=0;j<N;j++){
+    var cls='chipf', tag='';
+    if(j===6){cls+=' left';tag=' (never varied alone)';}
+    else if(st.final||j<st.rung-1||(j===st.rung-1&&st.stage===4)){cls+=' eaten';tag=' ✓';}
+    else if(j===st.rung-1){cls+=' now';}
+    h+='<span class="'+cls+'" style="--c:'+col(j)+'"><i></i>'+NAMES[j]+tag+'</span>';
+  }
+  $('plate').innerHTML=h;
+}
+function pairGrid(k){
+  var h='<div class="pg" role="img" aria-label="Which factors are redrawn and which are shared at rung '+k+'"><div></div>';
+  for(var j=0;j<N;j++)h+='<div class="h">'+NAMES[j]+'</div>';
+  ['state a','state b'].forEach(function(lab,r){
+    h+='<div class="r">'+lab+'</div>';
+    for(var j=0;j<N;j++){
+      var v=j<k;
+      h+='<div class="pc '+(v?(r?'b':''):'s')+(v||r===0?'':' s')+'" style="--c:'+col(j)+'" title="'+NAMES[j]+(v?': redrawn independently':': shared (identical in a and b)')+'">'+(v?(r?'b'+(j+1):'a'+(j+1)):'=')+'</div>';
+    }
+  });
+  return h+'</div><div class="leg"><span><i style="background:var(--muted)"></i>redrawn independently</span><span><i style="border:1.5px solid var(--muted)"></i>shared, identical in a and b</span></div>';
+}
+function barRow(vals,o){
+  o=o||{};var W=560,H=92,cw=W/N,bw=cw*.56,sc=(H-30)/2.2,s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(o.label||'')+'">';
+  for(var j=0;j<N;j++){
+    var x=j*cw+(cw-bw)/2,v=vals[j],h=v*sc;
+    if(v>0){s+='<rect x="'+x+'" y="'+(H-18-h)+'" width="'+bw+'" height="'+h+'" rx="4" fill="'+(o.grey?'var(--muted)':col(j))+'" opacity="'+(o.grey?.45:1)+'"><title>'+NAMES[j]+': '+f2(v,1)+'</title></rect><text x="'+(x+bw/2)+'" y="'+(H-22-h)+'" text-anchor="middle" class="ink">'+f2(v,1)+'</text>';}
+    else s+='<rect x="'+x+'" y="'+(H-24)+'" width="'+bw+'" height="6" rx="3" fill="none" stroke="var(--line)" stroke-dasharray="3 2"/>';
+    s+='<text x="'+(x+bw/2)+'" y="'+(H-4)+'" text-anchor="middle">'+NAMES[j]+'</text>';
+  }
+  return s+'</svg>';
+}
+function vecM(k){var a=[];for(var j=0;j<N;j++)a.push(j<k?2:0);return a}
+function subtract(k){
+  var a=vecM(k),b=vecM(k-1),c=[];for(var j=0;j<N;j++)c.push(a[j]-b[j]);
+  return '<div class="sub">M<sub>'+k+'</sub> (everything redrawn so far)</div>'+barRow(a,{label:'M k'})+
+         '<div class="sub">− M<sub>'+(k-1)+'</sub> (what was already eaten)</div>'+barRow(b,{grey:true,label:'M k minus 1'})+
+         '<div class="sub">= ΔM<sub>'+k+'</sub> (only the newest factor is left)</div>'+barRow(c,{label:'Delta M'});
+}
+function spectrum(k){
+  var e=S[k-1],W=560,H=150,bw=W/28,sc=(H-34)/2.2,s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Eigenvalues of the moment difference at rung '+k+'">';
+  s+='<line x1="0" x2="'+W+'" y1="'+(H-20)+'" y2="'+(H-20)+'" stroke="var(--line)"/>';
+  for(var i=0;i<28;i++){
+    var v=e[i],h=Math.max(Math.abs(v)*sc,1.2),x=i*bw+2;
+    s+='<rect x="'+x+'" y="'+(H-20-h)+'" width="'+(bw-4)+'" height="'+h+'" rx="3" fill="'+(i<4?col(k-1):'var(--muted)')+'" opacity="'+(i<4?1:.5)+'"><title>rank '+(i+1)+': '+f2(v,4)+'</title></rect>';
+  }
+  s+='<text x="'+(4*bw+6)+'" y="32">kept: '+e.slice(0,4).map(function(v){return f2(v)}).join(' · ')+'</text>';
+  s+='<line x1="'+(4*bw)+'" x2="'+(4*bw)+'" y1="6" y2="'+(H-20)+'" stroke="var(--fg)" stroke-dasharray="4 3"/><text x="'+(4*bw+6)+'" y="16" class="ink">the cut: 4 kept | 24 left behind</text>';
+  s+='<text x="2" y="'+(H-4)+'">rank 1</text><text x="'+W+'" y="'+(H-4)+'" text-anchor="end">rank 28</text></svg>';
+  var tail=e.slice(4),neg=tail.filter(function(v){return v<0}),ym=0.14,Wt=560,Ht=96,bt=Wt/tail.length,mid=Ht/2-4;
+  var t='<div class="sub">The 24 left behind, magnified (scale ±0.14). Red = negative: finite-sample noise, shown and never clipped.</div><svg viewBox="0 0 '+Wt+' '+Ht+'" role="img" aria-label="The remaining 24 eigenvalues">';
+  t+='<line x1="0" x2="'+Wt+'" y1="'+mid+'" y2="'+mid+'" stroke="var(--line)"/>';
+  tail.forEach(function(v,i){var h=Math.max(Math.abs(v)/ym*(mid-4),.8);t+='<rect x="'+(i*bt+1.5)+'" y="'+(v>=0?mid-h:mid)+'" width="'+(bt-3)+'" height="'+h+'" rx="2" fill="'+(v>=0?'var(--muted)':'var(--warn)')+'" opacity="'+(v>=0?.5:1)+'"><title>rank '+(i+5)+': '+f2(v,4)+'</title></rect>';});
+  t+='</svg>';
+  var gap=e[3]/e[4];
+  return s+t+'<div class="sub">Gap between the 4th and 5th eigenvalue: ×'+Math.round(gap).toLocaleString('en-US')+' (this seed). '+neg.length+' negative eigenvalue'+(neg.length===1?'':'s')+' among the 24'+(neg.length?', most negative '+f2(Math.min.apply(null,neg),3):'')+'.</div>';
+}
+function heat(k){
+  var h='<div class="scroll"><table class="hm" aria-label="Block to factor R squared, rows are blocks found so far"><tr><th></th>';
+  for(var j=0;j<N;j++)h+='<th>'+NAMES[j]+'</th>';
+  h+='</tr>';
+  for(var r=0;r<k;r++){
+    h+='<tr'+(r===k-1?' class="cur"':'')+'><th>B'+(r+1)+'</th>';
+    for(var j=0;j<N;j++){
+      var v=R2[r][j];
+      var p=Math.max(0,v)*100;
+      h+='<td'+(j===r?' class="dg"':'')+' style="background:color-mix(in srgb,var(--accent) '+p.toFixed(0)+'%,var(--card));color:'+(v>.5?'var(--onacc)':'var(--fg)')+'" title="'+f2(v,4)+'">'+(j!==r&&Math.abs(v)<0.002?'≈0':f2(v,3))+'</td>';
+    }
+    h+='</tr>';
+  }
+  h+='</table></div><div class="leg"><span>Rows: the blocks found so far (B1, B2, …), the last one framed. Columns: the true factors, read by a held-out ridge probe. The framed cell is the block\'s own factor.</span></div>';
+  return h;
+}
+var TITLES=[
+ ['Choose the pairs','Two states that differ only in the first '+'k'+' factors'],
+ ['Compare each pair','Shared factors cancel in the difference'],
+ ['Spit out what it already ate','Subtract the previous rung'],
+ ['Sieve','Eigen-directions of what is left'],
+ ['The bite: block k','Four directions, checked against the truth']];
+var SAY=[
+ function(k){return 'Rung '+k+': build pairs of states. Factors 1–'+k+' are redrawn independently in the two states; every later factor is shared. Labels are used only here, to build the pairs.'},
+ function(k){return 'Take the difference of the two embeddings. Shared factors cancel, so only the redrawn ones survive. Square and average over 30,000 pairs: that is the moment M'+k+'. Each redrawn factor adds energy 2 (idealised).'},
+ function(k){return k===1?'Rung 1 has nothing to subtract yet (M0 = 0), so the whole moment is the first factor.':'M'+k+' still contains every factor the learner has already eaten. Subtract M'+(k-1)+': only factor '+k+' is left.'},
+ function(k){return 'Eigen-decompose what is left. Four large eigenvalues (about 2) are factor '+k+'; everything after them is small noise. The cut is obvious, so the learner keeps the top four directions.'},
+ function(k){return 'Block '+k+' = those four directions. Checked afterwards against the truth: it reads factor '+k+' at R² '+f2(R2[k-1][k-1],3)+' and no other factor above '+f2(Math.max.apply(null,R2[k-1].filter(function(_,j){return j!==k-1})),4)+'. Next rung redraws one more factor.'}];
+function build(){
+  var k=st.rung,F=[pairGrid,function(k){return '<div class="sub">Energy each factor leaves in the pair differences</div>'+barRow(vecM(k),{label:'M k'})},subtract,spectrum,heat],h='';
+  for(var i=0;i<5;i++){
+    var cls='pn'+(st.final||i<st.stage?' done':'')+(!st.final&&i===st.stage?' act':'');
+    var t=TITLES[i][0].replace('block k','block '+k),sub=TITLES[i][1].replace("'k'",k).replace(/first k factors/,'first '+k+' factor'+(k>1?'s':''));
+    h+='<div class="'+cls+'"><div class="rail"><div class="nd">'+(i+1)+'</div><div class="ln"></div></div><div class="bd"><h3>'+t+'</h3><p class="sub">'+sub+'</p>'+F[i](k)+'</div></div>';
+  }
+  $('flow').innerHTML=h;
+  $('say').textContent=st.final?'All six rungs eaten. Each block reads its own factor at about 0.995–0.998 and the others at almost zero. The seventh factor was never varied alone, so it is the leftover: no block of its own.':SAY[st.stage](k);
+  plate();
+  var d=document.querySelectorAll('#dots button');d.forEach(function(b,i){b.className=(!st.final&&i===k-1)||(st.final&&i===6)?'on':''});
+  $('back').disabled=(k===1&&st.stage===0&&!st.final);$('next').disabled=st.final;
+}
+function step(dir){
+  if(st.final){if(dir<0){st.final=false;st.rung=K;st.stage=4;}build();return;}
+  if(dir>0){if(st.stage<4)st.stage++;else if(st.rung<K){st.rung++;st.stage=0;}else st.final=true;}
+  else{if(st.stage>0)st.stage--;else if(st.rung>1){st.rung--;st.stage=4;}}
+  build();
+  var a=document.querySelector('.pn.act');
+  if(a)a.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});
+}
+function stop(){if(st.timer){clearInterval(st.timer);st.timer=null;}$('play').textContent='▶ Play';}
+$('next').onclick=function(){stop();step(1)};
+$('back').onclick=function(){stop();step(-1)};
+$('play').onclick=function(){
+  if(st.timer){stop();return;}
+  if(st.final){st.final=false;st.rung=1;st.stage=0;build();}
+  $('play').textContent='❚❚ Pause';
+  st.timer=setInterval(function(){step(1);if(st.final)stop();},2600);
+};
+for(var i=1;i<=K+1;i++){(function(i){var b=document.createElement('button');b.type='button';b.textContent=i<=K?i:'end';b.setAttribute('aria-label',i<=K?'Rung '+i:'Finished');b.onclick=function(){stop();if(i<=K){st.final=false;st.rung=i;st.stage=0;}else{st.final=true;}build();};$('dots').appendChild(b);})(i);}
+document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'){stop();step(1)}else if(e.key==='ArrowLeft'){stop();step(-1)}});
+build();
+})();
+</script></body></html>
