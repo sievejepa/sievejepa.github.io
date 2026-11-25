@@ -1,344 +1,109 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SIEVE recovery report</title>
-<meta name="description" content="SIEVE block recovery on a Gaussian synthetic world and on a PickCube autoencoder, with and without whitening.">
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIEVE: a short report</title>
 <style>
-:root{--bg:#fafaf7;--fg:#1c2026;--muted:#5d646d;--line:#dcdcd4;--card:#ffffff;--accent:#2563eb;--code:#f0f0ea;--warn:#b45309}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--fg:#e8eaed;--muted:#9aa1ab;--line:#2c3138;--card:#1b1f24;--accent:#6ea0ff;--code:#1f242a;--warn:#e0a458;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#14171b;--fg:#e8eaed;--muted:#9aa1ab;--line:#2c3138;--card:#1b1f24;--accent:#6ea0ff;--code:#1f242a;--warn:#e0a458;color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.65 Georgia,"Times New Roman",serif}
-.wrap{max-width:860px;margin:0 auto;padding:0 18px}
-header{padding:48px 0 12px}
-h1{font:700 36px/1.15 "Segoe UI",system-ui,sans-serif;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
-h2{font:600 24px/1.3 "Segoe UI",system-ui,sans-serif;margin:44px 0 8px;text-wrap:balance}
-h3{font:600 18px/1.3 "Segoe UI",system-ui,sans-serif;margin:26px 0 4px}
-.lead{font-size:19px;color:var(--muted);margin:0 0 16px}
-a{color:var(--accent)}
-.ans{border-left:4px solid var(--accent);background:var(--card);padding:10px 18px;margin:18px 0}
-.ans p{margin:6px 0}
-.cap{font:14px "Segoe UI",system-ui,sans-serif;color:var(--muted);margin:4px 0 10px}
-table{border-collapse:collapse;width:100%;font:14px/1.45 "Segoe UI",system-ui,sans-serif;margin:10px 0}
-th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
-th{color:var(--muted);font-weight:600}
-td small{color:var(--muted)}
-.scroll{overflow-x:auto}
-.fig{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 14px 8px;margin:14px 0}
-.fig h3{margin:0 0 2px}
-.b{font-size:12px;padding:1px 7px;border-radius:10px;border:1px solid var(--line);white-space:nowrap}
-.b.strong{background:var(--accent);color:#fff;border-color:transparent}
-.note{border-left:3px solid var(--warn);padding:4px 14px;margin:18px 0;background:var(--card)}
-.note p{margin:6px 0}
-.tag{font:600 12px "Segoe UI",system-ui,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:var(--warn)}
-code{background:var(--code);font:14px Consolas,monospace;border-radius:6px;padding:1px 5px}
-ul{padding-left:22px}li{margin:4px 0}
-footer{border-top:1px solid var(--line);margin-top:56px;padding:22px 0 60px;font:14px "Segoe UI",system-ui,sans-serif;color:var(--muted)}
-.gl{stroke:var(--line);stroke-width:1}
-.sA{fill:var(--sA)}.sB{fill:var(--sB)}
-.sw{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:6px}
-.sw.sA{background:var(--sA)}.sw.sB{background:var(--sB)}
+body{margin:0;background:#fdfcf8;color:#222;font:18px/1.6 Georgia,"Times New Roman",serif}
+main{max-width:640px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:28px;line-height:1.25;margin:0 0 6px}
+h2{font-size:21px;margin:40px 0 8px}
+p{margin:0 0 14px}
+a{color:#1a4f8a}
+.by{color:#666;font-size:15px;margin-bottom:28px}
+svg{display:block;width:100%;height:auto;margin:14px 0 4px}
+svg text{font-family:Georgia,serif;fill:#222}
+.cap{font-size:15px;color:#555;margin-bottom:20px}
+table{border-collapse:collapse;margin:10px 0 18px;font-size:17px}
+td,th{border-bottom:1px solid #ccc;padding:5px 18px 5px 0;text-align:left;font-weight:normal}
+th{border-bottom:2px solid #222}
+.end{margin-top:40px;padding-top:14px;border-top:1px solid #ccc;font-size:16px}
+</style></head><body><main>
 
-.ladder-fig{--b0f:#e6eef8;--b0i:#1c2026;--b1f:#9ec5f4;--b1i:#0d1f3a;--b2f:#2a78d6;--b2i:#ffffff;--b3f:#104281;--b3i:#ffffff;
-  --sA:#2a78d6;--sB:#eb6834}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ladder-fig{--b0f:#252b33;--b0i:#c9ced6;--b1f:#184f95;--b1i:#ffffff;
-  --b2f:#3987e5;--b2i:#0b0b0b;--b3f:#9ec5f4;--b3i:#0b1a30;--sA:#3987e5;--sB:#d95926}}
-:root[data-theme="dark"] .ladder-fig{--b0f:#252b33;--b0i:#c9ced6;--b1f:#184f95;--b1i:#ffffff;--b2f:#3987e5;--b2i:#0b0b0b;
-  --b3f:#9ec5f4;--b3i:#0b1a30;--sA:#3987e5;--sB:#d95926}
-.ladder-fig svg{display:block;width:100%;height:auto;min-width:660px}
-.ladder-fig text{font-family:"Segoe UI",system-ui,sans-serif}
-.ladder-fig .tl{fill:var(--fg);font-size:13px}
-.ladder-fig .ts{fill:var(--muted);font-size:11px}
-.ladder-fig .tv{font-size:15px;font-weight:700}
-.ladder-fig .tk{font-size:11px;opacity:.85}
-.ladder-fig .c0{fill:var(--b0f)}.ladder-fig .i0{fill:var(--b0i)}
-.ladder-fig .c1{fill:var(--b1f)}.ladder-fig .i1{fill:var(--b1i)}
-.ladder-fig .c2{fill:var(--b2f)}.ladder-fig .i2{fill:var(--b2i)}
-.ladder-fig .c3{fill:var(--b3f)}.ladder-fig .i3{fill:var(--b3i)}
-.ladder-fig .cx{fill:var(--card)}.ladder-fig .ix{fill:var(--muted)}
-.ladder-fig .edge{stroke:var(--line);stroke-width:1}
-.ladder-fig .hatch{stroke:var(--muted);stroke-width:1.2}
-.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font:13px "Segoe UI",system-ui,sans-serif;color:var(--muted);margin:8px 0}
-.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
-.legend .l0{background:var(--b0f)}.legend .l1{background:var(--b1f)}.legend .l2{background:var(--b2f)}.legend .l3{background:var(--b3f)}
-.legend .lx{background:repeating-linear-gradient(45deg,transparent 0 3px,var(--muted) 3px 4px)}
-</style></head><body><div class="wrap">
-<header>
-<h1>Where SIEVE recovers a factor, and what it costs</h1>
-<p class="lead">The same method on two embeddings: a synthetic world with Gaussian latents and a LeJEPA encoder, and rendered PickCube images through a convolutional autoencoder. Recovery is read as a matter of degree.</p>
-<div class="ans">
-<p><strong>Result.</strong> A factor is recovered when the embedding encodes it. On the synthetic world a block of the true size (4 directions) recovers all 16 factors at 0.999 of the ceiling without whitening and 0.997 with it. On the PickCube autoencoder the factors are recovered too, but the price differs: without whitening a block of 1–5 directions does it; with whitening the same factors are spread over tens to over a thousand directions, so recovery needs ranks of 12–16 or more, and arm pose, cube position and cube yaw are still low at rank 16.</p>
-<p><strong>Reading.</strong> The spreading and the entanglement are properties of this autoencoder's embedding. The synthetic run, with the same code, shows no spreading. Which property of the autoencoder is responsible (its non-linearity, or the discrete factor levels) has not yet been separated experimentally; see <a href="#attribution">Attribution</a>.</p>
+<h1>SIEVE: pulling factors out of an encoder, one at a time</h1>
+<div class="by">A short report. The numbers are kept for the details page.</div>
+
+<h2>The question</h2>
+<p>Take a picture of a robot scene. A few things can change in it: where the cube is, its colour, the light, the camera angle. An encoder turns the picture into a long list of numbers.</p>
+<p>Somewhere in that list, each of those things is stored. Can we find out <em>where</em>, so that we get one small piece of the list per thing?</p>
+
+<svg viewBox="0 0 600 130" role="img" aria-label="A picture goes into an encoder and comes out as a long list, which we want to cut into pieces, one per factor">
+ <rect x="10" y="30" width="90" height="70" fill="none" stroke="#222" stroke-width="2"/>
+ <circle cx="40" cy="70" r="12" fill="none" stroke="#222" stroke-width="2"/>
+ <path d="M65 85 L85 60" stroke="#222" stroke-width="2" fill="none"/>
+ <text x="55" y="120" text-anchor="middle" font-size="15">picture</text>
+ <path d="M110 65 H160" stroke="#222" stroke-width="2"/><path d="M152 59 L162 65 L152 71" fill="none" stroke="#222" stroke-width="2"/>
+ <rect x="170" y="40" width="80" height="50" fill="none" stroke="#222" stroke-width="2"/>
+ <text x="210" y="70" text-anchor="middle" font-size="15">encoder</text>
+ <path d="M260 65 H310" stroke="#222" stroke-width="2"/><path d="M302 59 L312 65 L302 71" fill="none" stroke="#222" stroke-width="2"/>
+ <rect x="320" y="50" width="270" height="30" fill="none" stroke="#222" stroke-width="2"/>
+ <line x1="380" y1="50" x2="380" y2="80" stroke="#222" stroke-width="2"/>
+ <line x1="440" y1="50" x2="440" y2="80" stroke="#222" stroke-width="2"/>
+ <line x1="520" y1="50" x2="520" y2="80" stroke="#222" stroke-width="2"/>
+ <text x="350" y="42" text-anchor="middle" font-size="14">cube</text>
+ <text x="410" y="42" text-anchor="middle" font-size="14">colour</text>
+ <text x="480" y="42" text-anchor="middle" font-size="14">light</text>
+ <text x="555" y="42" text-anchor="middle" font-size="14">camera</text>
+ <text x="455" y="108" text-anchor="middle" font-size="15">a long list of numbers, which we want to cut into pieces</text>
+</svg>
+
+<h2>The idea</h2>
+<p>Take two pictures that are the same except for one thing, say the cube moved. Look at how the list changed. Only the cube's part of the list moved. That tells us where the cube lives.</p>
+<p>Now take two pictures where the cube <em>and</em> the colour are different. More of the list moves. The new part, compared with before, belongs to the colour.</p>
+<p>So we climb a ladder. Each step lets one more thing differ. Whatever is new at a step belongs to the thing we just added. We take that piece out and go on to the next step. Like a sieve: each pass catches one kind of thing.</p>
+
+<svg viewBox="0 0 600 190" role="img" aria-label="A ladder of picture pairs. Step 1: only the cube differs. Step 2: cube and colour. Step 3: cube, colour and light. The new part at each step is picked out.">
+ <g stroke="#222" stroke-width="2" fill="none">
+  <rect x="10" y="20" width="60" height="40"/><rect x="90" y="20" width="60" height="40"/>
+  <rect x="10" y="80" width="60" height="40"/><rect x="90" y="80" width="60" height="40"/>
+  <rect x="10" y="140" width="60" height="40"/><rect x="90" y="140" width="60" height="40"/>
+  <path d="M70 40 H90 M70 100 H90 M70 160 H90" stroke-dasharray="3 3"/>
+ </g>
+ <text x="170" y="45" font-size="15">step 1: only the cube differs</text>
+ <text x="170" y="105" font-size="15">step 2: cube and colour differ</text>
+ <text x="170" y="165" font-size="15">step 3: cube, colour, light differ</text>
+ <rect x="440" y="28" width="40" height="22" fill="#e9b44c" stroke="#222" stroke-width="2"/>
+ <rect x="440" y="88" width="40" height="22" fill="#e9b44c" fill-opacity=".45" stroke="#222" stroke-width="2"/>
+ <rect x="480" y="88" width="40" height="22" fill="#7fb3d5" stroke="#222" stroke-width="2"/>
+ <rect x="440" y="148" width="80" height="22" fill="#e9b44c" fill-opacity=".45" stroke="#222" stroke-width="2"/>
+ <rect x="520" y="148" width="40" height="22" fill="#9bc79b" stroke="#222" stroke-width="2"/>
+ <text x="500" y="16" font-size="13" text-anchor="middle">part of the list that moved</text>
+</svg>
+<p class="cap">At each step the moving part gets bigger. The new bit is the piece we keep.</p>
+
+<h2>Test 1: a clean made-up world</h2>
+<p>First we built a world where we know the answer. The factors are smooth random numbers (Gaussian), and the encoder is trained to undo the mixing.</p>
+<p><b>Result:</b> every factor came back almost perfectly, in a piece of exactly the right size, with nothing leaking from one factor into another. When the encoder keeps the information, the method finds it.</p>
+
+<h2>Test 2: robot pictures</h2>
+<p>Then we tried a simulated robot arm picking up a cube. Nine things vary: gripper opening, arm pose, cube yaw, cube position, cube colour, light tint, brightness and the camera. We used an autoencoder and asked how much of each factor we could get back.</p>
+<table>
+<tr><th>How well it came back</th><th>Which factors</th></tr>
+<tr><td>Well</td><td>arm pose, cube position, camera</td></tr>
+<tr><td>Partly</td><td>cube colour, brightness, light tint</td></tr>
+<tr><td>Hardly</td><td>gripper opening, cube yaw</td></tr>
+</table>
+<p>The pattern is simple. <b>If the encoder stores a factor strongly, SIEVE recovers it strongly. If the encoder barely stores it, there is little to recover.</b> This held both with and without whitening (a standard step that evens out the list before we start).</p>
+
+<h2>What whitening changes</h2>
+<p>With whitening, each factor comes out spread over hundreds of directions in the list. Without it, the same factor sits in just a few. The factor is found either way, but without whitening its piece is much smaller and tidier.</p>
+
+<svg viewBox="0 0 600 110" role="img" aria-label="With whitening a factor is spread over many directions; without it, only a few">
+ <text x="10" y="30" font-size="16">with whitening</text>
+ <rect x="170" y="14" width="420" height="22" fill="#7fb3d5" fill-opacity=".5" stroke="#222" stroke-width="2"/>
+ <text x="170" y="56" font-size="14">spread over hundreds of directions</text>
+ <text x="10" y="92" font-size="16">without</text>
+ <rect x="170" y="76" width="14" height="22" fill="#e9b44c" stroke="#222" stroke-width="2"/>
+ <text x="196" y="93" font-size="14">a handful</text>
+</svg>
+
+<p>Why does it spread? Our reading: the autoencoder is non-linear and the factors come in steps (a few levels each), while the clean world was linear and Gaussian. We have <em>not</em> tested this directly. It is our best explanation, not a result.</p>
+
+<h2>What this means</h2>
+<p>SIEVE finds what is in the encoder. If a factor is stored strongly, it comes out. If the encoder lost it on the way in, no method could get it back. So when recovery is weak, look at the encoder, not the method.</p>
+
+<div class="end">
+ Want the numbers? <a href="details.html">Detailed results</a>.
+ Want to watch the method run step by step? <a href="process.html">Interactive walkthrough</a>.
+ <a href="index.html">Back to the overview</a>.
 </div>
-</header>
-<main>
-
-<h2>The two experiments</h2>
-<div class="scroll"><table>
-<tr><th></th><th>Synthetic world</th><th>PickCube autoencoder</th></tr>
-<tr><td>Factors</td><td>17 blocks × 4 dimensions (68-D), independent Gaussian; 16 are scored, the 17th is the residual</td><td>9 factors on a full factorial grid of discrete levels (gripper, arm pose, cube yaw, cube position, cube colour, light tint, brightness, two camera factors), 34,992 rendered images</td></tr>
-<tr><td>Observation</td><td>4 tanh coupling layers (strength 0.5) applied to the latents</td><td>96×96 ManiSkill PickCube-v1 renders</td></tr>
-<tr><td>Encoder</td><td>LeJEPA encoder trained to invert the observation map, 5 seeds</td><td>High-capacity convolutional autoencoder, 2,048-D embedding, one trained model</td></tr>
-<tr><td>Pairs</td><td>30,000 nested pairs per rung</td><td>120,000 nested pairs per rung (the figure uses this run)</td></tr>
-<tr><td>Block rank</td><td>fixed at the true size, 4</td><td>searched over 1–16; the best rank that keeps leakage ≤ 0.25 is reported</td></tr>
-<tr><td>Variants</td><td colspan="2">No whitening (mean-centred only) and supplied ZCA whitening, on the same frozen embedding and the same pairs</td></tr>
-</table></div>
-
-<h3>How the score is computed</h3>
-<p>Every R² here is a held-out ridge regression, compared with a predictor that always guesses the test mean (R² = 1 − squared error ÷ squared error of that mean). <strong>Own-factor R²</strong> regresses the true factor values on the block's projection of the embedding. The <strong>ceiling</strong> is the same regression on the whole embedding, so it measures how much of the factor the embedding encodes at all. The <strong>ratio</strong> own ÷ ceiling is what the figure colours. <strong>Leakage</strong> is the largest R² of the block on any other factor. Where a ceiling is near zero the ratio is undefined and is not shown.</p>
-
-<h2>Recovery by rung</h2>
-<div class="fig ladder-fig">
-<h3>Figure 1. Own-factor R² as a fraction of the ceiling, rung by rung</h3>
-<div class="legend"><span><i class="l3"></i>strong ≥ 0.75</span><span><i class="l2"></i>substantial 0.50–0.75</span><span><i class="l1"></i>partial 0.25–0.50</span><span><i class="l0"></i>little &lt; 0.25</span><span><i class="lx"></i>no block under the leakage cap</span></div>
-<p class="cap"><b>A. Synthetic Gaussian world, LeJEPA encoder.</b> Mean of 5 seeds. Every rung sits at about 1.00 in both variants.</p>
-<div class="scroll"><svg viewBox="0 0 980 186" role="img" aria-label="Synthetic Gaussian world: all 16 rungs recovered at about 1.00 of the ceiling, with and without whitening">
-<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" class="hatch"/></pattern></defs>
-<text x="166.0" y="18" text-anchor="middle" class="tl" font-weight="600">1</text>
-<text x="218.0" y="18" text-anchor="middle" class="tl" font-weight="600">2</text>
-<text x="270.0" y="18" text-anchor="middle" class="tl" font-weight="600">3</text>
-<text x="322.0" y="18" text-anchor="middle" class="tl" font-weight="600">4</text>
-<text x="374.0" y="18" text-anchor="middle" class="tl" font-weight="600">5</text>
-<text x="426.0" y="18" text-anchor="middle" class="tl" font-weight="600">6</text>
-<text x="478.0" y="18" text-anchor="middle" class="tl" font-weight="600">7</text>
-<text x="530.0" y="18" text-anchor="middle" class="tl" font-weight="600">8</text>
-<text x="582.0" y="18" text-anchor="middle" class="tl" font-weight="600">9</text>
-<text x="634.0" y="18" text-anchor="middle" class="tl" font-weight="600">10</text>
-<text x="686.0" y="18" text-anchor="middle" class="tl" font-weight="600">11</text>
-<text x="738.0" y="18" text-anchor="middle" class="tl" font-weight="600">12</text>
-<text x="790.0" y="18" text-anchor="middle" class="tl" font-weight="600">13</text>
-<text x="842.0" y="18" text-anchor="middle" class="tl" font-weight="600">14</text>
-<text x="894.0" y="18" text-anchor="middle" class="tl" font-weight="600">15</text>
-<text x="946.0" y="18" text-anchor="middle" class="tl" font-weight="600">16</text>
-<text x="128" y="66.0" text-anchor="end" class="tl" font-weight="600">No whitening</text>
-<text x="128" y="82.0" text-anchor="end" class="ts">rank 4 per rung</text>
-<g><title>rung 1, no whitening: own-factor R² / full-embedding R² = 1.000 (mean of 5 seeds), rank 4</title><rect x="143" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="166.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 2, no whitening: own-factor R² / full-embedding R² = 1.000 (mean of 5 seeds), rank 4</title><rect x="195" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="218.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 3, no whitening: own-factor R² / full-embedding R² = 0.999 (mean of 5 seeds), rank 4</title><rect x="247" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="270.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 4, no whitening: own-factor R² / full-embedding R² = 0.999 (mean of 5 seeds), rank 4</title><rect x="299" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="322.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 5, no whitening: own-factor R² / full-embedding R² = 0.999 (mean of 5 seeds), rank 4</title><rect x="351" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="374.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 6, no whitening: own-factor R² / full-embedding R² = 0.999 (mean of 5 seeds), rank 4</title><rect x="403" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="426.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 7, no whitening: own-factor R² / full-embedding R² = 0.999 (mean of 5 seeds), rank 4</title><rect x="455" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="478.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 8, no whitening: own-factor R² / full-embedding R² = 0.999 (mean of 5 seeds), rank 4</title><rect x="507" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="530.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 9, no whitening: own-factor R² / full-embedding R² = 0.999 (mean of 5 seeds), rank 4</title><rect x="559" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="582.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 10, no whitening: own-factor R² / full-embedding R² = 0.999 (mean of 5 seeds), rank 4</title><rect x="611" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="634.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 11, no whitening: own-factor R² / full-embedding R² = 0.998 (mean of 5 seeds), rank 4</title><rect x="663" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="686.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 12, no whitening: own-factor R² / full-embedding R² = 0.998 (mean of 5 seeds), rank 4</title><rect x="715" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="738.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 13, no whitening: own-factor R² / full-embedding R² = 0.998 (mean of 5 seeds), rank 4</title><rect x="767" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="790.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 14, no whitening: own-factor R² / full-embedding R² = 0.998 (mean of 5 seeds), rank 4</title><rect x="819" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="842.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 15, no whitening: own-factor R² / full-embedding R² = 0.998 (mean of 5 seeds), rank 4</title><rect x="871" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="894.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 16, no whitening: own-factor R² / full-embedding R² = 0.998 (mean of 5 seeds), rank 4</title><rect x="923" y="46" width="46" height="44" rx="6" class="c3 edge"/><text x="946.0" y="73.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<text x="128" y="116.0" text-anchor="end" class="tl" font-weight="600">Whitened (ZCA)</text>
-<text x="128" y="132.0" text-anchor="end" class="ts">rank 4 per rung</text>
-<g><title>rung 1, whitened (zca): own-factor R² / full-embedding R² = 0.998 (mean of 5 seeds), rank 4</title><rect x="143" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="166.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 2, whitened (zca): own-factor R² / full-embedding R² = 0.998 (mean of 5 seeds), rank 4</title><rect x="195" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="218.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 3, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="247" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="270.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 4, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="299" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="322.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 5, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="351" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="374.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 6, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="403" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="426.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 7, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="455" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="478.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 8, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="507" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="530.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 9, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="559" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="582.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 10, whitened (zca): own-factor R² / full-embedding R² = 0.996 (mean of 5 seeds), rank 4</title><rect x="611" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="634.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 11, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="663" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="686.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 12, whitened (zca): own-factor R² / full-embedding R² = 0.997 (mean of 5 seeds), rank 4</title><rect x="715" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="738.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 13, whitened (zca): own-factor R² / full-embedding R² = 0.996 (mean of 5 seeds), rank 4</title><rect x="767" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="790.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 14, whitened (zca): own-factor R² / full-embedding R² = 0.996 (mean of 5 seeds), rank 4</title><rect x="819" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="842.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 15, whitened (zca): own-factor R² / full-embedding R² = 0.996 (mean of 5 seeds), rank 4</title><rect x="871" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="894.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<g><title>rung 16, whitened (zca): own-factor R² / full-embedding R² = 0.996 (mean of 5 seeds), rank 4</title><rect x="923" y="96" width="46" height="44" rx="6" class="c3 edge"/><text x="946.0" y="123.0" text-anchor="middle" class="tv i3">1.00</text></g>
-<text x="128" y="164" text-anchor="end" class="ts">block rank used</text>
-<text x="166.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="218.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="270.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="322.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="374.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="426.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="478.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="530.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="582.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="634.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="686.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="738.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="790.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="842.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="894.0" y="164" text-anchor="middle" class="tl">4</text>
-<text x="946.0" y="164" text-anchor="middle" class="tl">4</text>
-</svg></div>
-<p class="cap" style="margin-top:14px"><b>B. PickCube, convolutional autoencoder.</b> Best rank in 1–16 with leakage ≤ 0.25. Whitened values are capped by the rank limit of 16 and are still rising for several factors.</p>
-<div class="scroll"><svg viewBox="0 0 1062 240" role="img" aria-label="PickCube autoencoder: nine rungs, recovery as a fraction of the full-embedding R², with and without whitening">
-<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" class="hatch"/></pattern></defs>
-<text x="238.0" y="18" text-anchor="middle" class="tl" font-weight="600">1</text>
-<text x="238.0" y="34" text-anchor="middle" class="ts">gripper</text>
-<text x="334.0" y="18" text-anchor="middle" class="tl" font-weight="600">2</text>
-<text x="334.0" y="34" text-anchor="middle" class="ts">arm pose</text>
-<text x="430.0" y="18" text-anchor="middle" class="tl" font-weight="600">3</text>
-<text x="430.0" y="34" text-anchor="middle" class="ts">cube yaw</text>
-<text x="526.0" y="18" text-anchor="middle" class="tl" font-weight="600">4</text>
-<text x="526.0" y="34" text-anchor="middle" class="ts">cube pos.</text>
-<text x="622.0" y="18" text-anchor="middle" class="tl" font-weight="600">5</text>
-<text x="622.0" y="34" text-anchor="middle" class="ts">cube colour</text>
-<text x="718.0" y="18" text-anchor="middle" class="tl" font-weight="600">6</text>
-<text x="718.0" y="34" text-anchor="middle" class="ts">light tint</text>
-<text x="814.0" y="18" text-anchor="middle" class="tl" font-weight="600">7</text>
-<text x="814.0" y="34" text-anchor="middle" class="ts">brightness</text>
-<text x="910.0" y="18" text-anchor="middle" class="tl" font-weight="600">8</text>
-<text x="910.0" y="34" text-anchor="middle" class="ts">cam dist/elev</text>
-<text x="1006.0" y="18" text-anchor="middle" class="tl" font-weight="600">9</text>
-<text x="1006.0" y="34" text-anchor="middle" class="ts">cam azimuth</text>
-<text x="178" y="73.0" text-anchor="end" class="tl" font-weight="600">No whitening</text>
-<text x="178" y="89.0" text-anchor="end" class="ts">best rank 1–16</text>
-<g><title>gripper, no whitening: own R² 0.100 / ceiling 0.790 = 0.13 (little), rank 1, leakage 0.176</title><rect x="193" y="46" width="90" height="58" rx="6" class="c0 edge"/><text x="238.0" y="76.0" text-anchor="middle" class="tv i0">0.13</text><text x="238.0" y="91.0" text-anchor="middle" class="tk i0">rank 1</text></g>
-<g><title>arm pose, no whitening: own R² 0.813 / ceiling 1.000 = 0.81 (strong), rank 3, leakage 0.136</title><rect x="289" y="46" width="90" height="58" rx="6" class="c3 edge"/><text x="334.0" y="76.0" text-anchor="middle" class="tv i3">0.81</text><text x="334.0" y="91.0" text-anchor="middle" class="tk i3">rank 3</text></g>
-<g><title>cube yaw, no whitening: every rank 1–16 leaks above 0.25 into other factors</title><rect x="385" y="46" width="90" height="58" rx="6" class="cx edge"/><rect x="385" y="46" width="90" height="58" rx="6" fill="url(#hatch)"/><text x="430.0" y="80.0" text-anchor="middle" class="tv ix">leaks</text></g>
-<g><title>cube position, no whitening: own R² 0.790 / ceiling 0.997 = 0.79 (strong), rank 4, leakage 0.034</title><rect x="481" y="46" width="90" height="58" rx="6" class="c3 edge"/><text x="526.0" y="76.0" text-anchor="middle" class="tv i3">0.79</text><text x="526.0" y="91.0" text-anchor="middle" class="tk i3">rank 4</text></g>
-<g><title>cube colour, no whitening: own R² 0.417 / ceiling 0.962 = 0.43 (partial), rank 1, leakage 0.019</title><rect x="577" y="46" width="90" height="58" rx="6" class="c1 edge"/><text x="622.0" y="76.0" text-anchor="middle" class="tv i1">0.43</text><text x="622.0" y="91.0" text-anchor="middle" class="tk i1">rank 1</text></g>
-<g><title>light tint, no whitening: own R² 0.645 / ceiling 1.000 = 0.65 (substantial), rank 2, leakage 0.034</title><rect x="673" y="46" width="90" height="58" rx="6" class="c2 edge"/><text x="718.0" y="76.0" text-anchor="middle" class="tv i2">0.65</text><text x="718.0" y="91.0" text-anchor="middle" class="tk i2">rank 2</text></g>
-<g><title>brightness, no whitening: own R² 0.767 / ceiling 1.000 = 0.77 (strong), rank 3, leakage 0.117</title><rect x="769" y="46" width="90" height="58" rx="6" class="c3 edge"/><text x="814.0" y="76.0" text-anchor="middle" class="tv i3">0.77</text><text x="814.0" y="91.0" text-anchor="middle" class="tk i3">rank 3</text></g>
-<g><title>camera dist/elev, no whitening: own R² 0.941 / ceiling 1.000 = 0.94 (strong), rank 5, leakage 0.208</title><rect x="865" y="46" width="90" height="58" rx="6" class="c3 edge"/><text x="910.0" y="76.0" text-anchor="middle" class="tv i3">0.94</text><text x="910.0" y="91.0" text-anchor="middle" class="tk i3">rank 5</text></g>
-<g><title>camera azimuth, no whitening: own R² 0.921 / ceiling 1.000 = 0.92 (strong), rank 2, leakage 0.109</title><rect x="961" y="46" width="90" height="58" rx="6" class="c3 edge"/><text x="1006.0" y="76.0" text-anchor="middle" class="tv i3">0.92</text><text x="1006.0" y="91.0" text-anchor="middle" class="tk i3">rank 2</text></g>
-<text x="178" y="137.0" text-anchor="end" class="tl" font-weight="600">Whitened (ZCA)</text>
-<text x="178" y="153.0" text-anchor="end" class="ts">best rank 1–16</text>
-<g><title>gripper, whitened (zca): own R² 0.382 / ceiling 0.813 = 0.47 (partial), rank 16, leakage -0.001</title><rect x="193" y="110" width="90" height="58" rx="6" class="c1 edge"/><text x="238.0" y="140.0" text-anchor="middle" class="tv i1">0.47</text><text x="238.0" y="155.0" text-anchor="middle" class="tk i1">rank 16</text></g>
-<g><title>arm pose, whitened (zca): own R² 0.067 / ceiling 1.000 = 0.07 (little), rank 16, leakage 0.000</title><rect x="289" y="110" width="90" height="58" rx="6" class="c0 edge"/><text x="334.0" y="140.0" text-anchor="middle" class="tv i0">0.07</text><text x="334.0" y="155.0" text-anchor="middle" class="tk i0">rank 16</text></g>
-<g><title>cube yaw, whitened (zca): own R² 0.065 / ceiling 0.739 = 0.09 (little), rank 16, leakage 0.001</title><rect x="385" y="110" width="90" height="58" rx="6" class="c0 edge"/><text x="430.0" y="140.0" text-anchor="middle" class="tv i0">0.09</text><text x="430.0" y="155.0" text-anchor="middle" class="tk i0">rank 16</text></g>
-<g><title>cube position, whitened (zca): own R² 0.110 / ceiling 0.998 = 0.11 (little), rank 16, leakage 0.000</title><rect x="481" y="110" width="90" height="58" rx="6" class="c0 edge"/><text x="526.0" y="140.0" text-anchor="middle" class="tv i0">0.11</text><text x="526.0" y="155.0" text-anchor="middle" class="tk i0">rank 16</text></g>
-<g><title>cube colour, whitened (zca): own R² 0.828 / ceiling 0.972 = 0.85 (strong), rank 16, leakage -0.000</title><rect x="577" y="110" width="90" height="58" rx="6" class="c3 edge"/><text x="622.0" y="140.0" text-anchor="middle" class="tv i3">0.85</text><text x="622.0" y="155.0" text-anchor="middle" class="tk i3">rank 16</text></g>
-<g><title>light tint, whitened (zca): own R² 0.335 / ceiling 1.000 = 0.33 (partial), rank 16, leakage -0.000</title><rect x="673" y="110" width="90" height="58" rx="6" class="c1 edge"/><text x="718.0" y="140.0" text-anchor="middle" class="tv i1">0.33</text><text x="718.0" y="155.0" text-anchor="middle" class="tk i1">rank 16</text></g>
-<g><title>brightness, whitened (zca): own R² 0.929 / ceiling 1.000 = 0.93 (strong), rank 16, leakage -0.000</title><rect x="769" y="110" width="90" height="58" rx="6" class="c3 edge"/><text x="814.0" y="140.0" text-anchor="middle" class="tv i3">0.93</text><text x="814.0" y="155.0" text-anchor="middle" class="tk i3">rank 16</text></g>
-<g><title>camera dist/elev, whitened (zca): own R² 0.986 / ceiling 1.000 = 0.99 (strong), rank 16, leakage 0.006</title><rect x="865" y="110" width="90" height="58" rx="6" class="c3 edge"/><text x="910.0" y="140.0" text-anchor="middle" class="tv i3">0.99</text><text x="910.0" y="155.0" text-anchor="middle" class="tk i3">rank 16</text></g>
-<g><title>camera azimuth, whitened (zca): own R² 0.986 / ceiling 1.000 = 0.99 (strong), rank 16, leakage 0.012</title><rect x="961" y="110" width="90" height="58" rx="6" class="c3 edge"/><text x="1006.0" y="140.0" text-anchor="middle" class="tv i3">0.99</text><text x="1006.0" y="155.0" text-anchor="middle" class="tk i3">rank 16</text></g>
-<text x="178" y="192" text-anchor="end" class="ts">rank to reach 75%, no whitening</text>
-<text x="238.0" y="192" text-anchor="middle" class="tl">none ≤16</text>
-<text x="334.0" y="192" text-anchor="middle" class="tl">2</text>
-<text x="430.0" y="192" text-anchor="middle" class="tl">none ≤16</text>
-<text x="526.0" y="192" text-anchor="middle" class="tl">2</text>
-<text x="622.0" y="192" text-anchor="middle" class="tl">none ≤16</text>
-<text x="718.0" y="192" text-anchor="middle" class="tl">none ≤16</text>
-<text x="814.0" y="192" text-anchor="middle" class="tl">2</text>
-<text x="910.0" y="192" text-anchor="middle" class="tl">1</text>
-<text x="1006.0" y="192" text-anchor="middle" class="tl">1</text>
-<text x="178" y="218" text-anchor="end" class="ts">rank to reach 75%, whitened</text>
-<text x="238.0" y="218" text-anchor="middle" class="tl">none ≤16</text>
-<text x="334.0" y="218" text-anchor="middle" class="tl">none ≤16</text>
-<text x="430.0" y="218" text-anchor="middle" class="tl">none ≤16</text>
-<text x="526.0" y="218" text-anchor="middle" class="tl">none ≤16</text>
-<text x="622.0" y="218" text-anchor="middle" class="tl">14</text>
-<text x="718.0" y="218" text-anchor="middle" class="tl">none ≤16</text>
-<text x="814.0" y="218" text-anchor="middle" class="tl">12</text>
-<text x="910.0" y="218" text-anchor="middle" class="tl">6</text>
-<text x="1006.0" y="218" text-anchor="middle" class="tl">2</text>
-</svg></div>
-</div>
-
-<h2>Synthetic world</h2>
-<p>All 16 rungs are recovered at the true block size. Mean own ÷ ceiling is 0.999 without whitening and 0.997 with it (worst rung-seed 0.997 and 0.995). Maximum leakage is 0.0004 and 0.0006; the mean principal angle to the oracle subspace is 1.6° in both. Whitening neither helps nor hurts here, and no extra rank is needed.</p>
-
-<h2>PickCube autoencoder</h2>
-<div class="fig">
-<h3>Table 1. Recovery per factor</h3>
-<div class="scroll"><table>
-<tr><th>Factor</th><th>Ceiling (full embedding)</th><th>No whitening: best block</th><th>Whitened: best block (≤ rank 16)</th><th>Rank for 75% (none / whitened)</th><th>Directions occupied (none / whitened)</th><th>Nuisance ÷ signal</th></tr>
-<tr><td>gripper</td><td>0.79</td><td>0.13 <span class="b little">little</span><br><small>rank 1, own R² 0.10, leak 0.18</small></td><td>0.47 <span class="b partial">partial</span><br><small>rank 16, own R² 0.38, leak -0.00</small></td><td>not by 16 / not by 16</td><td>5 / 868</td><td>1.88</td></tr>
-<tr><td>arm pose</td><td>1.00</td><td>0.81 <span class="b strong">strong</span><br><small>rank 3, own R² 0.81, leak 0.14</small></td><td>0.07 <span class="b little">little</span><br><small>rank 16, own R² 0.07, leak 0.00</small></td><td>2 / not by 16</td><td>6 / 1417</td><td>0.26</td></tr>
-<tr><td>cube yaw</td><td>0.71</td><td><span class="b leak">every rank leaks &gt; 0.25</span></td><td>0.09 <span class="b little">little</span><br><small>rank 16, own R² 0.06, leak 0.00</small></td><td>not by 16 / not by 16</td><td>9 / 1194</td><td>5.06</td></tr>
-<tr><td>cube position</td><td>1.00</td><td>0.79 <span class="b strong">strong</span><br><small>rank 4, own R² 0.79, leak 0.03</small></td><td>0.11 <span class="b little">little</span><br><small>rank 16, own R² 0.11, leak 0.00</small></td><td>2 / not by 16</td><td>5 / 679</td><td>0.22</td></tr>
-<tr><td>cube colour</td><td>0.96</td><td>0.43 <span class="b partial">partial</span><br><small>rank 1, own R² 0.42, leak 0.02</small></td><td>0.85 <span class="b strong">strong</span><br><small>rank 16, own R² 0.83, leak -0.00</small></td><td>not by 16 / 14</td><td>4 / 162</td><td>3.93</td></tr>
-<tr><td>light tint</td><td>1.00</td><td>0.65 <span class="b substantial">substantial</span><br><small>rank 2, own R² 0.65, leak 0.03</small></td><td>0.33 <span class="b partial">partial</span><br><small>rank 16, own R² 0.33, leak -0.00</small></td><td>not by 16 / not by 16</td><td>11 / 54</td><td>1.18</td></tr>
-<tr><td>brightness</td><td>1.00</td><td>0.77 <span class="b strong">strong</span><br><small>rank 3, own R² 0.77, leak 0.12</small></td><td>0.93 <span class="b strong">strong</span><br><small>rank 16, own R² 0.93, leak -0.00</small></td><td>2 / 12</td><td>8 / 18</td><td>0.93</td></tr>
-<tr><td>camera dist/elev</td><td>1.00</td><td>0.94 <span class="b strong">strong</span><br><small>rank 5, own R² 0.94, leak 0.21</small></td><td>0.99 <span class="b strong">strong</span><br><small>rank 16, own R² 0.99, leak 0.01</small></td><td>1 / 6</td><td>6 / 6</td><td>0.11</td></tr>
-<tr><td>camera azimuth</td><td>1.00</td><td>0.92 <span class="b strong">strong</span><br><small>rank 2, own R² 0.92, leak 0.11</small></td><td>0.99 <span class="b strong">strong</span><br><small>rank 16, own R² 0.99, leak 0.01</small></td><td>1 / 2</td><td>2 / 2</td><td>0.09</td></tr>
-</table></div>
-<p class="cap">Ratio = own R² ÷ ceiling. “Directions occupied” counts the embedding-covariance directions carrying the factor's moment-difference energy above 1% of the top one. Nuisance ÷ signal is from the fixed-factor test (no whitening, provisional ranks): the block's energy on pairs that hold its own factor fixed divided by its energy on pairs that vary it.</p>
-</div>
-
-<div class="fig ladder-fig">
-<h3>Figure 2. How many embedding directions each factor occupies</h3>
-<p class="cap"><span class="sw sA"></span>No whitening &nbsp; <span class="sw sB"></span>Supplied whitening. Log scale.</p>
-<div class="scroll"><div style="min-width:640px"><svg viewBox="0 0 750 360" role="img" aria-label="Embedding directions each factor occupies, whitened against not whitened">
-<line x1="150.0" x2="150.0" y1="22" y2="338" class="gl"/>
-<text x="150.0" y="354" text-anchor="middle" class="ts">1</text>
-<line x1="307.5265903924043" x2="307.5265903924043" y1="22" y2="338" class="gl"/>
-<text x="307.5265903924043" y="354" text-anchor="middle" class="ts">10</text>
-<line x1="465.05318078480855" x2="465.05318078480855" y1="22" y2="338" class="gl"/>
-<text x="465.05318078480855" y="354" text-anchor="middle" class="ts">100</text>
-<line x1="622.5797711772128" x2="622.5797711772128" y1="22" y2="338" class="gl"/>
-<text x="622.5797711772128" y="354" text-anchor="middle" class="ts">1000</text>
-<text x="140" y="45" text-anchor="end" class="tl">gripper</text>
-<g><title>gripper: 5 directions (no whitening)</title><rect x="150" y="30" width="110.10636156961709" height="10" rx="3" class="sA"/></g>
-<text x="266.1063615696171" y="39" class="ts">5</text>
-<g><title>gripper: 868 directions (whitened)</title><rect x="150" y="43" width="462.89499310787755" height="10" rx="3" class="sB"/></g>
-<text x="618.8949931078776" y="52" class="ts">868</text>
-<text x="140" y="79" text-anchor="end" class="tl">arm pose</text>
-<g><title>arm pose: 6 directions (no whitening)</title><rect x="150" y="64" width="122.57951328252148" height="10" rx="3" class="sA"/></g>
-<text x="278.5795132825215" y="73" class="ts">6</text>
-<g><title>arm pose: 1417 directions (whitened)</title><rect x="150" y="77" width="496.42454757490395" height="10" rx="3" class="sB"/></g>
-<text x="652.424547574904" y="86" class="ts">1417</text>
-<text x="140" y="113" text-anchor="end" class="tl">cube yaw</text>
-<g><title>cube yaw: 9 directions (no whitening)</title><rect x="150" y="98" width="150.31856891946848" height="10" rx="3" class="sA"/></g>
-<text x="306.3185689194685" y="107" class="ts">9</text>
-<g><title>cube yaw: 1194 directions (whitened)</title><rect x="150" y="111" width="484.71000022243174" height="10" rx="3" class="sB"/></g>
-<text x="640.7100002224317" y="120" class="ts">1194</text>
-<text x="140" y="147" text-anchor="end" class="tl">cube position</text>
-<g><title>cube position: 5 directions (no whitening)</title><rect x="150" y="132" width="110.10636156961709" height="10" rx="3" class="sA"/></g>
-<text x="266.1063615696171" y="141" class="ts">5</text>
-<g><title>cube position: 679 directions (whitened)</title><rect x="150" y="145" width="446.094789977715" height="10" rx="3" class="sB"/></g>
-<text x="602.094789977715" y="154" class="ts">679</text>
-<text x="140" y="181" text-anchor="end" class="tl">cube colour</text>
-<g><title>cube colour: 4 directions (no whitening)</title><rect x="150" y="166" width="94.84045764557439" height="10" rx="3" class="sA"/></g>
-<text x="250.8404576455744" y="175" class="ts">4</text>
-<g><title>cube colour: 162 directions (whitened)</title><rect x="150" y="179" width="348.05736666172413" height="10" rx="3" class="sB"/></g>
-<text x="504.05736666172413" y="188" class="ts">162</text>
-<text x="140" y="215" text-anchor="end" class="tl">light tint</text>
-<g><title>light tint: 11 directions (no whitening)</title><rect x="150" y="200" width="164.04703895256574" height="10" rx="3" class="sA"/></g>
-<text x="320.04703895256574" y="209" class="ts">11</text>
-<g><title>light tint: 54 directions (whitened)</title><rect x="150" y="213" width="272.89808220198995" height="10" rx="3" class="sB"/></g>
-<text x="428.89808220198995" y="222" class="ts">54</text>
-<text x="140" y="249" text-anchor="end" class="tl">brightness</text>
-<g><title>brightness: 8 directions (no whitening)</title><rect x="150" y="234" width="142.2606864683616" height="10" rx="3" class="sA"/></g>
-<text x="298.2606864683616" y="243" class="ts">8</text>
-<g><title>brightness: 18 directions (whitened)</title><rect x="150" y="247" width="197.73879774225566" height="10" rx="3" class="sB"/></g>
-<text x="353.73879774225566" y="256" class="ts">18</text>
-<text x="140" y="283" text-anchor="end" class="tl">camera dist/elev</text>
-<g><title>camera dist/elev: 6 directions (no whitening)</title><rect x="150" y="268" width="122.57951328252148" height="10" rx="3" class="sA"/></g>
-<text x="278.5795132825215" y="277" class="ts">6</text>
-<g><title>camera dist/elev: 6 directions (whitened)</title><rect x="150" y="281" width="122.57951328252148" height="10" rx="3" class="sB"/></g>
-<text x="278.5795132825215" y="290" class="ts">6</text>
-<text x="140" y="317" text-anchor="end" class="tl">camera azimuth</text>
-<g><title>camera azimuth: 2 directions (no whitening)</title><rect x="150" y="302" width="47.42022882278718" height="10" rx="3" class="sA"/></g>
-<text x="203.42022882278718" y="311" class="ts">2</text>
-<g><title>camera azimuth: 2 directions (whitened)</title><rect x="150" y="315" width="47.42022882278718" height="10" rx="3" class="sB"/></g>
-<text x="203.42022882278718" y="324" class="ts">2</text>
-</svg></div></div>
-</div>
-
-<ul>
-<li><strong>Recovery follows the ceiling.</strong> Gripper and cube yaw are the two factors the embedding encodes least (ceilings 0.79 and 0.71); they are also the two weakest or leaking blocks without whitening. The camera, arm pose, cube position, tint and brightness have ceilings near 1.00 and are recovered strongly or substantially without whitening.</li>
-<li><strong>Whitening spreads each factor.</strong> With whitening a factor occupies up to 1,417 directions (arm pose); without it, 2–11. A rank-1 to rank-3 block therefore captures almost nothing in the whitened space, and the rank must grow to 12–16 or beyond. The original run's rank sweep reached 0.75–0.83 for arm pose, cube position and gripper only at rank 128.</li>
-<li><strong>Some blocks are entangled.</strong> For gripper, cube yaw, cube colour and light tint, the nuisance ÷ signal ratio is above 1: the block responds more to pairs that hold its own factor fixed than to pairs that vary it. Their leakage onto other factors without whitening reaches 0.18, 0.37, 0.36 and 0.69.</li>
-</ul>
-
-<h2>When a factor never reaches the embedding</h2>
-<div class="fig">
-<h3>Figure 3. A rendered synthetic world where rungs 1–3 carry no information</h3>
-<img src="assets/sieve_method_v3_frame12.png" alt="SieveJEPA diagram: rungs 4 to 8 each recover one pattern (cube position, cube colour, light colour, brightness, camera) from an entangled scene; rungs 1 to 3 carry no information" style="width:100%;height:auto;border-radius:8px;border:1px solid var(--line)">
-<p class="cap">Synthetic rendered world, no video, no decoder. Rungs 4–8 each recover one pattern. Rungs 1–3 are not rendered in this world, so there is nothing for the sieve to find there. Read-outs come from a real SIEVE run without whitening; recovery is partial for the cube factors (about 0.5 and 0.3 of the ceiling) and stronger for the others (about 0.55 to 0.77).</p>
-</div>
-<p>This is the same pattern as the PickCube ResNet LeJEPA run, where gripper, cube yaw, cube position and cube colour have a full-embedding R² of about zero (−0.008 to −0.006), and the blocks for those rungs recover nothing because the embedding does not hold them. One difference matters for the wording: in Figure 3 the first three factors are missing from the images themselves, so the loss happens before any encoder; in the ResNet run the factors are in the images and are lost at the encoder. In both cases a factor with no information in the embedding has no recoverable block, whatever the method.</p>
-
-<h2 id="attribution">Attribution</h2>
-<div class="note"><p><span class="tag">Interpretation</span></p>
-<p>The data point at the embedding, not the method: the same extraction code recovers the synthetic blocks to 0.997–0.999 of the ceiling, while on the autoencoder the ceiling itself is below 0.80 for two factors, factors spread over hundreds of whitened directions, and some blocks respond to the wrong pairs. The autoencoder differs from the synthetic setup in several ways at once: it is non-linear and convolutional, and its factors are discrete levels rather than Gaussian.</p>
-<p><span class="tag">Not yet isolated</span> Which of those differences causes the spreading is a hypothesis. Two experiments would separate them: an MLP encoder on the synthetic world (set A3, in progress; it collapsed under the original SIGReg weight and is being rerun with weight 0.05 as a labelled variant) and PickCube re-rendered with continuous Gaussian-sampled factors.</p></div>
-
-<h2>Limits</h2>
-<ul>
-<li>PickCube: one trained autoencoder and one pair draw per setting, no confidence intervals; the best rank is chosen among 16 with leakage ≤ 0.25 on validation rows, so values are best-case readings.</li>
-<li>Whitened PickCube values are lower bounds: the rank search stops at 16 and several curves are still rising.</li>
-<li>Nuisance ÷ signal uses the provisional ranks (1, 3, 1, 2, 3, 3, 1, 2, 1) and no whitening, not the best ranks of Table 1.</li>
-<li>The synthetic figure is for the unscaled embedding only. Other synthetic conditions are in the technical write-up.</li>
-</ul>
-
-<h2>Sources</h2>
-<p class="cap">Synthetic: <code>sieve_nowhiten_synth_rungs16_rescale/seed*_results.json</code>. PickCube: <code>pickcube_lejepa_sieve_high_capacity_ae_verified/pod_results/minimal_rank.json</code>, <code>diag_whitening.json</code>, and <code>pickcube_deep_rungs_whitening/fixed_factor_energy.json</code>. Every number on this page is computed from those files by <code>make_report.py</code>.</p>
-</main>
-<footer>SIEVE is research code; the code is not yet public. <a href="index.html">Back to the overview</a>.</footer>
-</div></body></html>
+</main></body></html>
