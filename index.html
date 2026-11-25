@@ -41,8 +41,8 @@ footer{border-top:1px solid var(--line);margin-top:56px;padding:22px 0 60px;font
   <p class="lead">Recover each factor's block of a self-supervised embedding by pairing states, differencing their moments, and taking eigen-directions.</p>
   <a class="cta" href="#blog">Technical write-up</a>
   <span class="cap" style="margin-left:10px">Code: coming soon</span>
-  <img class="gif" src="sieve_method.gif" alt="Animation of SIEVE: paired states, the signed spectrum of each moment difference, the kept top-4 directions and the resulting per-rung scores">
-  <p class="cap">The method in 20 seconds, on a synthetic world (no video): 5 hidden factors with their own rhythms, a 24-D embedding, SIEVE run rung by rung without whitening. Read-outs and scores come from that run; coloured curves are linearly scaled to the true factor for display.</p>
+  <img class="gif" src="sieve_method_v2.gif" alt="Animation of SIEVE: paired states, the signed spectrum of each moment difference, the kept top-4 directions and the resulting per-rung scores">
+  <p class="cap">The method on a synthetic rendered world (no video): 8 nested factors, rungs 1-3 carry no information, rungs 4-8 recover cube position, cube colour, light colour, brightness and camera. Read-outs come from a real SIEVE run without whitening; recovery is partial for the cube factors (own-factor R2 over ceiling about 0.5 and 0.3) and stronger for the others (about 0.55 to 0.77).</p>
 </header>
 
 <main>
