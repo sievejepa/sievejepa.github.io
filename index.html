@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIEVE: block recovery by moment differences</title>
+<meta name="description" content="SIEVE recovers each factor's block of a self-supervised embedding by differencing paired states and taking eigen-directions.">
+<style>
+:root{--bg:#fafaf7;--fg:#1c2026;--muted:#5d646d;--line:#dcdcd4;--card:#ffffff;--accent:#2563eb;--code:#f0f0ea;--warn:#b45309}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--fg:#e8eaed;--muted:#9aa1ab;--line:#2c3138;--card:#1b1f24;--accent:#6ea0ff;--code:#1f242a;--warn:#e0a458;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171b;--fg:#e8eaed;--muted:#9aa1ab;--line:#2c3138;--card:#1b1f24;--accent:#6ea0ff;--code:#1f242a;--warn:#e0a458;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.65 Georgia,"Times New Roman",serif}
+.wrap{max-width:760px;margin:0 auto;padding:0 max(18px,env(safe-area-inset-left,0px)) 0 max(18px,env(safe-area-inset-right,0px))}
+header{padding:56px 0 24px}
+h1{font:700 40px/1.15 "Segoe UI",system-ui,sans-serif;margin:0 0 10px;letter-spacing:-.01em}
+h2{font:600 24px/1.3 "Segoe UI",system-ui,sans-serif;margin:44px 0 8px;text-wrap:balance}
+h3{font:600 18px/1.3 "Segoe UI",system-ui,sans-serif;margin:26px 0 4px}
+.lead{font-size:20px;color:var(--muted);margin:0 0 22px}
+a{color:var(--accent)}
+.cta{display:inline-block;font:600 16px "Segoe UI",system-ui,sans-serif;background:var(--accent);color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none}
+.cta.alt{background:transparent;color:var(--accent);border:1.5px solid var(--accent);margin-left:8px}
+.gif{width:100%;border:1px solid var(--line);border-radius:10px;margin:26px 0 6px;background:var(--card)}
+.cap{font:14px "Segoe UI",system-ui,sans-serif;color:var(--muted);margin:0 0 8px}
+table{border-collapse:collapse;width:100%;font:15px "Segoe UI",system-ui,sans-serif;margin:12px 0}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left}
+th{color:var(--muted);font-weight:600}
+.scroll{overflow-x:auto}
+code,pre{background:var(--code);font:14px Consolas,"SFMono-Regular",monospace;border-radius:6px}
+code{padding:1px 5px}pre{padding:12px 14px;overflow-x:auto}
+.note{border-left:3px solid var(--warn);padding:4px 14px;margin:18px 0;background:var(--card)}
+.note p{margin:6px 0}
+dl{margin:0}dt{font:600 16px "Segoe UI",system-ui,sans-serif;margin-top:12px}dd{margin:2px 0 0}
+footer{border-top:1px solid var(--line);margin-top:56px;padding:22px 0 60px;font:14px "Segoe UI",system-ui,sans-serif;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>SIEVE</h1>
+  <p class="lead">Recover each factor's block of a self-supervised embedding by pairing states, differencing their moments, and taking eigen-directions.</p>
+  <!-- REPO_URL: replace the href below with the code repository link -->
+  <a class="cta" id="repo-link" href="https://github.com/sievejepa">Code on GitHub</a>
+  <a class="cta alt" href="#blog">Technical write-up</a>
+  <img class="gif" src="sieve_method.gif" alt="Animation of SIEVE: paired states, the signed spectrum of each moment difference, the kept top-4 directions and the resulting per-rung scores">
+  <p class="cap">The method in 20 seconds. Pair diagram is illustrative; the spectra and scores are real (seed 0, 16-rung synthetic world, no whitening, no rescaling).</p>
+</header>
+
+<main>
+<h2>What it does</h2>
+<p>A frozen encoder maps observations to an embedding. The world behind the observations is made of several <em>factors</em> (for example cube position, colour, lighting), each spanning several dimensions. SIEVE finds, for each factor, the <em>subspace</em> of the embedding that carries it. It does not recover single coordinates: a multi-dimensional factor has no privileged axes, so the target is the subspace up to a rotation inside it.</p>
+<dl>
+<dt>Factor</dt><dd>One independent source of variation in the world; here a block of q = 4 latent dimensions.</dd>
+<dt>Block</dt><dd>The q embedding directions SIEVE assigns to one factor.</dd>
+<dt>Rung</dt><dd>One step of the ladder; rung k recovers factor k.</dd>
+<dt>Own-factor R²</dt><dd>How well a linear probe on the block predicts its own factor.</dd>
+<dt>Ceiling</dt><dd>The same probe's R² using the full embedding; scores below are own-factor R² divided by this.</dd>
+</dl>
+
+<h2 id="blog">How it works</h2>
+<h3>1. Pairing is an intervention</h3>
+<p>Take two states that share some factors and redraw the others independently. The difference of their embeddings then depends only on the redrawn factors. Rung k redraws one more factor than rung k−1, so the pair distributions are nested.</p>
+<h3>2. The moment of the differences</h3>
+<p>For each rung, form the uncentred second moment of the pair differences:</p>
+<pre>M_k = (1/N) · Σ_pairs  d dᵀ ,   d = h(x_a) − h(x_b)</pre>
+<p>It is deliberately not a covariance. Subtract the previous rung:</p>
+<pre>ΔM_k = M_k − M_(k−1)</pre>
+<p>ΔM_k contains only what factor k adds. Its spectrum is kept <strong>signed</strong>: with finite samples some eigenvalues come out negative, and they are reported, never clipped. In the animation above they appear in red below the axis; by rung 16 about half of the 68 eigenvalues are negative, all tiny.</p>
+<h3>3. Eigen-directions</h3>
+<p>The top-q eigenvectors (largest positive eigenvalues) of ΔM_k form block k. The ladder stops at the first rung whose positive rank is below q, and it never pads.</p>
+<h3>4. Whitening, and its floor</h3>
+<p>Whitening rescales the embedding so every direction has unit variance, using <code>1/sqrt(max(λ, eps))</code> on the covariance eigenvalues λ. Directions with λ below <code>eps</code> are divided by √eps instead of their own scale, so they stay under-scaled. This floor, not the idea of whitening, is what limited the high-condition-number runs below.</p>
+
+<h2>Results so far</h2>
+<p>Synthetic world: 17 factors × 4 dimensions (68-D), 16 recoverable rungs, 4 tanh coupling layers, LeJEPA encoder trained on CPU. Then each embedding axis is rescaled by a known factor, giving the condition numbers below (largest over smallest covariance eigenvalue). Mean of own-factor R² over ceiling, 5 seeds × 16 rungs.</p>
+<div class="scroll"><table>
+<tr><th>Condition number</th><th>No whitening</th><th>ZCA, eps 1e-5</th><th>ZCA, eps 1e-8 or lower</th><th>Per-axis standardisation</th><th>Cholesky generalised eigenproblem</th></tr>
+<tr><td>1.2</td><td>0.999</td><td>0.997</td><td>0.997</td><td>0.999</td><td>0.997</td></tr>
+<tr><td>1e2</td><td>0.786</td><td>0.997</td><td>not run</td><td>0.999</td><td>0.997</td></tr>
+<tr><td>1e4</td><td>0.495</td><td>0.997</td><td>not run</td><td>0.999</td><td>0.997</td></tr>
+<tr><td>1e6</td><td>0.379</td><td>0.984</td><td>0.997</td><td>0.999</td><td>0.997</td></tr>
+<tr><td>1e8</td><td>0.317</td><td>0.779</td><td>0.997</td><td>0.999</td><td>0.997</td></tr>
+</table></div>
+<ul>
+<li>Without whitening, recovery falls steadily as axis scales spread. A candidate cause is that a small-scale factor's moment eigenvalues are outranked by nonlinear residue on large-scale axes; this explanation has not been tested separately.</li>
+<li>With whitening, the drop at 1e8 comes from the eigenvalue floor: 26 of 68 eigenvalues are below eps = 1e-5. Lowering eps to 1e-8 restores 0.997.</li>
+<li>Per-axis standardisation and a generalised eigenproblem (solve ΔM r = λ C r with C the embedding covariance, by Cholesky, no floor) also restore it. The rescaling here is exactly diagonal, so per-axis scaling is a favourable fit.</li>
+</ul>
+<p>Within a block, SIEVE's eigenvectors are an arbitrary rotation. A separate experiment that rotated each block by a sparsity criterion (a DSReg-style footprint penalty) raised single-coordinate recovery from 0.61 to 0.96 of the ceiling on the same synthetic setup, on a favourable near-identity map.</p>
+
+<div class="note">
+<p><strong>What these results do not show.</strong> The synthetic world is favourable: a near-linear, invertible encoder, independent Gaussian latents and exactly matched pairs. Scores near 0.999 are expected there. On the PickCube autoencoder, recovery was only partial, and full whitening spread each factor over roughly 870–1,400 embedding directions against 2–11 without whitening. Why whitening helps in one setting and hurts in the other is untested. Negative controls (shuffled pairs, random subspaces) are being run.</p>
+</div>
+
+<h2>Status</h2>
+<div class="scroll"><table>
+<tr><th>Area</th><th>State</th></tr>
+<tr><td>16-rung synthetic ladder, rescaled axes, whitening variants</td><td>Done</td></tr>
+<tr><td>Within-block rotation (DSReg-style footprint)</td><td>Done on synthetic; PickCube not run</td></tr>
+<tr><td>Boundary experiments (correlated factors, inexact pairs, nonlinearity, wrong block size, pair count, controls)</td><td>Running</td></tr>
+<tr><td>Scope experiments (pairing from time lag, trees, rendered images, unknown factor order)</td><td>Running</td></tr>
+<tr><td>Deeper rungs and whitening on PickCube</td><td>Planned</td></tr>
+<tr><td>Recovering the OU rate ρ of each factor</td><td>Not done; ρ was fixed at 0.5</td></tr>
+</table></div>
+
+<h2>Run it</h2>
+<pre>python run_seed.py --seed 0      # train encoder, build moments, extract blocks
+python aggregate.py             # tables and results.json</pre>
+<p>All code and per-seed results are in the repository.</p>
+</main>
+
+<footer>
+  SIEVE is research code. Numbers on this page come from the result files in the repository. Recovery is reported as a matter of degree.
+</footer>
+</div>
+</body>
+</html>
