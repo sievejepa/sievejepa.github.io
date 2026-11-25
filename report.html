@@ -24,26 +24,79 @@ th{border-bottom:2px solid #222}
 
 <h2>The question</h2>
 <p>Take a picture of a robot scene. A few things can change in it: where the cube is, its colour, the light, the camera angle. An encoder turns the picture into a long list of numbers. This list is the <b>learned representation</b> (or embedding) of the picture.</p>
-<p>The representation carries a huge mixture of these variables: every number in the list blends many of them together. Can we unmix it, so that we get one small piece of the list per variable? This is the problem of <b>recovering the underlying variables (factors) from a learned representation</b>.</p>
+<p>Each picture gets its own list, and every one of these learned representations carries a huge mixture of the same variables: cube, colour, light and camera are all present together, blended into every number. Can we recover each factor separately, one small piece of the list per variable? This is the problem of <b>recovering the underlying variables (factors) from a learned representation</b>.</p>
 
-<svg viewBox="0 0 600 130" role="img" aria-label="A picture goes into an encoder and comes out as a long list, which we want to cut into pieces, one per factor">
- <rect x="10" y="30" width="90" height="70" fill="none" stroke="#222" stroke-width="2"/>
- <circle cx="40" cy="70" r="12" fill="none" stroke="#222" stroke-width="2"/>
- <path d="M65 85 L85 60" stroke="#222" stroke-width="2" fill="none"/>
- <text x="55" y="120" text-anchor="middle" font-size="15">picture</text>
- <path d="M110 65 H160" stroke="#222" stroke-width="2"/><path d="M152 59 L162 65 L152 71" fill="none" stroke="#222" stroke-width="2"/>
- <rect x="170" y="40" width="80" height="50" fill="none" stroke="#222" stroke-width="2"/>
- <text x="210" y="70" text-anchor="middle" font-size="15">encoder</text>
- <path d="M260 65 H310" stroke="#222" stroke-width="2"/><path d="M302 59 L312 65 L302 71" fill="none" stroke="#222" stroke-width="2"/>
- <rect x="320" y="50" width="270" height="30" fill="none" stroke="#222" stroke-width="2"/>
- <line x1="380" y1="50" x2="380" y2="80" stroke="#222" stroke-width="2"/>
- <line x1="440" y1="50" x2="440" y2="80" stroke="#222" stroke-width="2"/>
- <line x1="520" y1="50" x2="520" y2="80" stroke="#222" stroke-width="2"/>
- <text x="350" y="42" text-anchor="middle" font-size="14">cube</text>
- <text x="410" y="42" text-anchor="middle" font-size="14">colour</text>
- <text x="480" y="42" text-anchor="middle" font-size="14">light</text>
- <text x="555" y="42" text-anchor="middle" font-size="14">camera</text>
- <text x="455" y="108" text-anchor="middle" font-size="15">a long list: a mixture of all the factors, to be unmixed</text>
+<svg viewBox="0 0 600 210" role="img" aria-label="Several pictures are encoded into several learned representations. Each representation is a mixture of cube, colour, light and camera. SIEVE separates each factor out.">
+ <rect x="10" y="20" width="60" height="44" fill="none" stroke="#222" stroke-width="2"/><circle cx="32" cy="44" r="8" fill="none" stroke="#222" stroke-width="2"/>
+ <rect x="10" y="80" width="60" height="44" fill="none" stroke="#222" stroke-width="2"/><circle cx="32" cy="104" r="8" fill="none" stroke="#222" stroke-width="2"/>
+ <rect x="10" y="140" width="60" height="44" fill="none" stroke="#222" stroke-width="2"/><circle cx="32" cy="164" r="8" fill="none" stroke="#222" stroke-width="2"/>
+ <text x="40" y="200" text-anchor="middle" font-size="14">pictures</text>
+ <path d="M80 105 H120" stroke="#222" stroke-width="2"/><path d="M113 99 L122 105 L113 111" fill="none" stroke="#222" stroke-width="2"/>
+ <text x="100" y="95" text-anchor="middle" font-size="13">encoder</text>
+ <rect x="135" y="30" width="10" height="26" fill="#e9b44c"/>
+ <rect x="145" y="30" width="10" height="26" fill="#9bc79b"/>
+ <rect x="155" y="30" width="10" height="26" fill="#e9b44c"/>
+ <rect x="165" y="30" width="10" height="26" fill="#9bc79b"/>
+ <rect x="175" y="30" width="10" height="26" fill="#e9b44c"/>
+ <rect x="185" y="30" width="10" height="26" fill="#9bc79b"/>
+ <rect x="195" y="30" width="10" height="26" fill="#e9b44c"/>
+ <rect x="205" y="30" width="10" height="26" fill="#9bc79b"/>
+ <rect x="215" y="30" width="10" height="26" fill="#e9b44c"/>
+ <rect x="225" y="30" width="10" height="26" fill="#9bc79b"/>
+ <rect x="235" y="30" width="10" height="26" fill="#e9b44c"/>
+ <rect x="245" y="30" width="10" height="26" fill="#9bc79b"/>
+ <rect x="255" y="30" width="10" height="26" fill="#e9b44c"/>
+ <rect x="265" y="30" width="10" height="26" fill="#9bc79b"/>
+ <rect x="275" y="30" width="10" height="26" fill="#e9b44c"/>
+ <rect x="285" y="30" width="10" height="26" fill="#9bc79b"/>
+ <rect x="135" y="30" width="160" height="26" fill="none" stroke="#222" stroke-width="2"/>
+ <rect x="135" y="90" width="10" height="26" fill="#7fb3d5"/>
+ <rect x="145" y="90" width="10" height="26" fill="#e9b44c"/>
+ <rect x="155" y="90" width="10" height="26" fill="#c49bc7"/>
+ <rect x="165" y="90" width="10" height="26" fill="#9bc79b"/>
+ <rect x="175" y="90" width="10" height="26" fill="#7fb3d5"/>
+ <rect x="185" y="90" width="10" height="26" fill="#e9b44c"/>
+ <rect x="195" y="90" width="10" height="26" fill="#c49bc7"/>
+ <rect x="205" y="90" width="10" height="26" fill="#9bc79b"/>
+ <rect x="215" y="90" width="10" height="26" fill="#7fb3d5"/>
+ <rect x="225" y="90" width="10" height="26" fill="#e9b44c"/>
+ <rect x="235" y="90" width="10" height="26" fill="#c49bc7"/>
+ <rect x="245" y="90" width="10" height="26" fill="#9bc79b"/>
+ <rect x="255" y="90" width="10" height="26" fill="#7fb3d5"/>
+ <rect x="265" y="90" width="10" height="26" fill="#e9b44c"/>
+ <rect x="275" y="90" width="10" height="26" fill="#c49bc7"/>
+ <rect x="285" y="90" width="10" height="26" fill="#9bc79b"/>
+ <rect x="135" y="90" width="160" height="26" fill="none" stroke="#222" stroke-width="2"/>
+ <rect x="135" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="145" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="155" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="165" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="175" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="185" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="195" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="205" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="215" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="225" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="235" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="245" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="255" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="265" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="275" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="285" y="150" width="10" height="26" fill="#9bc79b"/>
+ <rect x="135" y="150" width="160" height="26" fill="none" stroke="#222" stroke-width="2"/>
+ <text x="215" y="200" text-anchor="middle" font-size="14">learned representations</text>
+ <text x="215" y="18" text-anchor="middle" font-size="13">each a mixture of all four</text>
+ <path d="M305 105 H345" stroke="#222" stroke-width="2"/><path d="M338 99 L347 105 L338 111" fill="none" stroke="#222" stroke-width="2"/>
+ <text x="325" y="95" text-anchor="middle" font-size="13">SIEVE</text>
+ <rect x="360" y="22" width="120" height="26" fill="#e9b44c" stroke="#222" stroke-width="2"/>
+ <text x="492" y="40" font-size="15">cube</text>
+ <rect x="360" y="62" width="120" height="26" fill="#7fb3d5" stroke="#222" stroke-width="2"/>
+ <text x="492" y="80" font-size="15">colour</text>
+ <rect x="360" y="102" width="120" height="26" fill="#9bc79b" stroke="#222" stroke-width="2"/>
+ <text x="492" y="120" font-size="15">light</text>
+ <rect x="360" y="142" width="120" height="26" fill="#c49bc7" stroke="#222" stroke-width="2"/>
+ <text x="492" y="160" font-size="15">camera</text>
+ <text x="420" y="200" text-anchor="middle" font-size="14">one separate piece per factor</text>
 </svg>
 
 <h2>The idea</h2>
